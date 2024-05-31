@@ -51,7 +51,7 @@ class MyServerCallbacks : public BLEServerCallbacks {
 
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* pWifiCharacteristic) {
-    std::string value = pWifiCharacteristic->getValue();
+    String value = pWifiCharacteristic->getValue();
     if (value.length() > 0) {
 
       #ifdef DEBUG
@@ -147,16 +147,13 @@ void loop() {
   // notify changed value
   if (deviceConnected) {
     // Create the data string
-    String sensorData = String(currentData.temperature1) + ","
-       + String(currentData.temperature2) + ","
-       + String(currentData.light) + "," 
-       + String(currentData.soilMoisture1) + ","
-       + String(currentData.soilMoisture2) + ","
-       + String(currentData.humidity) + ","
-       + String(WiFi.status());
+    char [100] sensorData = "";
+    sprintf(*sensorData, "%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.d\0", currentData.temperature1, 
+    currentData.temperature2, currentData.light, currentData.soilMoisture1, currentData.soilMoisture2,
+    currentData.humidity, WiFi.status());
 
     // Update the characteristic value and notify
-    pSensorCharacteristic->setValue(sensorData.c_str());
+    pSensorCharacteristic->setValue(sensorData);
     pSensorCharacteristic->notify();
 
     #ifdef DEBUG
@@ -192,10 +189,19 @@ void loop() {
   if ((millis() - currentData.timestamp) >= sensorUpdateInterval) {
     sensors.requestTemperatures();
     float s1 = sensors.getTempCByIndex(0);
+    float maxVal = 4095.0;
     currentData.temperature1 = s1 < 0 ? -1: s1;
-    currentData.light = analogRead(lightPin)/4095;
-    currentData.soilMoisture1 = analogRead(soilPin1)/4095;
-    currentData.soilMoisture2 = analogRead(soilPin2)/4095;
+    currentData.light = analogRead(lightPin)/maxVal;
+    //Moisture sensor 1
+    //max line reads 4095
+    //min recommended line reads 3562
+    //in air reads
+    currentData.soilMoisture1 = 1- analogRead(soilPin1)/maxVal;
+    //Moisture sensor 2
+    //Max line reads 4095
+    //min recommended reads 3562
+    //in air reads
+    currentData.soilMoisture2 = 1-analogRead(soilPin2)/maxVal;
     currentData.timestamp = millis();
 
     float s2 = dht.readTemperature();

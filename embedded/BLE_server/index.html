@@ -678,12 +678,12 @@
           if (humidity === -1) humidity = null;
 
 
-          tempSensor1.innerHTML = temp1? temp1 : "N/A";
-          tempSensor2.innerHTML = temp2 ? temp2 : "N/A";
-          lightPercent.innerHTML = light !== null  ? light*100 : "N/A";
-          soilMoisture1.innerHTML = soil1 !== null ? soil1*100 : "N/A";
-          soilMoisture2.innerHTML = soil2 !== null  ? soil2*100 : "N/A";
-          humiditySensor.innerHTML = humidity !== null ? humidity : "N/A";
+          tempSensor1.innerHTML = temp1? temp1.toFixed(1) + " C": "N/A";
+          tempSensor2.innerHTML = temp2 ? temp2.toFixed(1) + " C": "N/A";
+          lightPercent.innerHTML = light !== null  ? (light*100).toFixed(1) + " %": "N/A";
+          soilMoisture1.innerHTML = soil1 !== null ? (soil1*100).toFixed(1) + " %": "N/A";
+          soilMoisture2.innerHTML = soil2 !== null  ? (soil2*100).toFixed(1) + " %": "N/A";
+          humiditySensor.innerHTML = humidity !== null ? humidity.toFixed(1) + " %": "N/A";
           wifiStatus.innerHTML = wifi == 3 ? "Connected" : "😢";
 
           const newData = {
@@ -822,11 +822,11 @@
             JSON.parse(localStorage.getItem("sensorData")) || [];
           const csvContent =
             "data:text/csv;charset=utf-8," +
-            "Temp Sensor 1,Temp Sensor 2,Light Percentage,Soil Moisture 1,Soil Moisture 2,Timestamp\n" +
+            "Temp Sensor 1,Temp Sensor 2,Light Percentage,Soil Moisture 1,Soil Moisture 2,Humidity,Timestamp\n" +
             storedData
               .map(
                 (data) =>
-                  `${data.temp1},${data.temp2},${data.light},${data.soilMoisture1},${data.soilMoisture2},${data.timestamp}`
+                  `${data.temp1},${data.temp2},${data.light},${data.soilMoisture1},${data.soilMoisture2},${data.humidity},${data.timestamp}`
               )
               .join("\n");
 
