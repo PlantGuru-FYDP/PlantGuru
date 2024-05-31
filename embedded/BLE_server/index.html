@@ -680,19 +680,19 @@
 
           tempSensor1.innerHTML = temp1? temp1.toFixed(1) + " C": "N/A";
           tempSensor2.innerHTML = temp2 ? temp2.toFixed(1) + " C": "N/A";
-          lightPercent.innerHTML = light !== null  ? (light*100).toFixed(1) + " %": "N/A";
-          soilMoisture1.innerHTML = soil1 !== null ? (soil1*100).toFixed(1) + " %": "N/A";
-          soilMoisture2.innerHTML = soil2 !== null  ? (soil2*100).toFixed(1) + " %": "N/A";
+          lightPercent.innerHTML = light !== null  ? (light).toFixed(1) + " %": "N/A";
+          soilMoisture1.innerHTML = soil1 !== null ? (soil1).toFixed(1) + " %": "N/A";
+          soilMoisture2.innerHTML = soil2 !== null  ? (soil2).toFixed(1) + " %": "N/A";
           humiditySensor.innerHTML = humidity !== null ? humidity.toFixed(1) + " %": "N/A";
           wifiStatus.innerHTML = wifi == 3 ? "Connected" : "😢";
 
           const newData = {
-            temp1: temp1,
-            temp2: temp2,
-            light: light*100,
-            soilMoisture1: soil1*100,
-            soilMoisture2: soil2*100,
-            humidity: humidity,
+            temp1: temp1.toFixed(1),
+            temp2: temp2.toFixed(1),
+            light: light.toFixed(1),
+            soilMoisture1: soil1.toFixed(1),
+            soilMoisture2: soil2.toFixed(1),
+            humidity: humidity.toFixed(1),
             timestamp: new Date().getTime(),
           };
 

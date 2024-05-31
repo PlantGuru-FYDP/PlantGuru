@@ -147,13 +147,16 @@ void loop() {
   // notify changed value
   if (deviceConnected) {
     // Create the data string
-    char [100] sensorData = "";
-    sprintf(*sensorData, "%.1f, %.1f, %.1f, %.1f, %.1f, %.1f, %.d\0", currentData.temperature1, 
-    currentData.temperature2, currentData.light, currentData.soilMoisture1, currentData.soilMoisture2,
-    currentData.humidity, WiFi.status());
+    String sensorData = String(round(currentData.temperature1 * 10) / 10) + ","
+       + String(round(currentData.temperature2 * 10) / 10) + ","
+       + String(round(currentData.light * 10) / 10) + "," 
+       + String(round(currentData.soilMoisture1 * 10) / 10) + ","
+       + String(round(currentData.soilMoisture2 * 10) / 10) + ","
+       + String(round(currentData.humidity * 10) / 10) + ","
+       + String(WiFi.status());
 
     // Update the characteristic value and notify
-    pSensorCharacteristic->setValue(sensorData);
+    pSensorCharacteristic->setValue(sensorData.c_str());
     pSensorCharacteristic->notify();
 
     #ifdef DEBUG
@@ -191,17 +194,17 @@ void loop() {
     float s1 = sensors.getTempCByIndex(0);
     float maxVal = 4095.0;
     currentData.temperature1 = s1 < 0 ? -1: s1;
-    currentData.light = analogRead(lightPin)/maxVal;
+    currentData.light = (analogRead(lightPin)/maxVal) *100;
     //Moisture sensor 1
     //max line reads 4095
     //min recommended line reads 3562
     //in air reads
-    currentData.soilMoisture1 = 1- analogRead(soilPin1)/maxVal;
+    currentData.soilMoisture1 = (1- analogRead(soilPin1)/maxVal) * 100;
     //Moisture sensor 2
     //Max line reads 4095
     //min recommended reads 3562
     //in air reads
-    currentData.soilMoisture2 = 1-analogRead(soilPin2)/maxVal;
+    currentData.soilMoisture2 = (1-analogRead(soilPin2)/maxVal) *100;
     currentData.timestamp = millis();
 
     float s2 = dht.readTemperature();
