@@ -10,6 +10,8 @@
 #include "DHT.h"
 #include "constants.h"
 
+#define DEBUG
+
 BLEServer* pServer = NULL;
 BLECharacteristic* pSensorCharacteristic = NULL;
 BLECharacteristic* pWifiCharacteristic = NULL;
@@ -26,7 +28,7 @@ String wifiPASS = "ECE358PROBLEM";
 
 uint32_t SensorUpdate = 0;
 uint8_t sensorUpdateInterval = 5 * 1000;
-bool saveToSD = true;
+bool saveToSD = false;
 
 SDmemory sdmemory;
 
@@ -51,8 +53,11 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* pWifiCharacteristic) {
     std::string value = pWifiCharacteristic->getValue();
     if (value.length() > 0) {
-      Serial.print("Characteristic event, written: ");
+
+      #ifdef DEBUG
+      Serial.print("Received data from client: ");
       Serial.println(value.c_str());  // Print the written value
+      #endif
 
       // Update wifiSSID and wifiPASS variables
       String writtenValue = value.c_str();
@@ -63,10 +68,12 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
       }
 
       // Print the updated wifiSSID and wifiPASS
+      #ifdef DEBUG
       Serial.print("Updated wifiSSID: ");
       Serial.println(wifiSSID);
       Serial.print("Updated wifiPASS: ");
       Serial.println(wifiPASS);
+      #endif
 
       WiFi.begin(wifiSSID, wifiPASS);
     }
@@ -118,13 +125,16 @@ void setup() {
   pAdvertising->setScanResponse(false);
   pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
+
+  #ifdef DEBUG
   Serial.println("Waiting for a client connection to notify...");
+  #endif
 
   //sd card
   SDmemory sdmemory;
 
   // Setup the SD card file
-  if (!sdmemory.init()) {
+  if (saveToSD && !sdmemory.init()) {
     Serial.println("Failed to setup SD memory");
     return;
   }
@@ -149,18 +159,24 @@ void loop() {
     pSensorCharacteristic->setValue(sensorData.c_str());
     pSensorCharacteristic->notify();
 
-    Serial.print("New value notified: ");
+    #ifdef DEBUG
+    Serial.print("Sent sensor data values: ");
     Serial.println(sensorData);
+    #endif
 
     delay(3000);  // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test I was able to go as low as 3ms
   }
 
   // disconnecting
   if (!deviceConnected && oldDeviceConnected) {
+    #ifdef DEBUG
     Serial.println("Device disconnected.");
+    #endif
     delay(500);                   // give the bluetooth stack the chance to get things ready
     pServer->startAdvertising();  // restart advertising
+    #ifdef DEBUG
     Serial.println("Start advertising");
+    #endif
     oldDeviceConnected = deviceConnected;
   }
 
@@ -168,15 +184,15 @@ void loop() {
   if (deviceConnected && !oldDeviceConnected) {
     // do stuff here on connecting
     oldDeviceConnected = deviceConnected;
+    #ifdef DEBUG
     Serial.println("Device Connected");
+    #endif
   }
 
   if ((millis() - currentData.timestamp) >= sensorUpdateInterval) {
     sensors.requestTemperatures();
     float s1 = sensors.getTempCByIndex(0);
-    //float s2 = sensors.getTempCByIndex(1); 
     currentData.temperature1 = s1 < 0 ? -1: s1;
-    //currentData.temperature2 = s2 < 0 ? -1: s2;
     currentData.light = analogRead(lightPin)/4095;
     currentData.soilMoisture1 = analogRead(soilPin1)/4095;
     currentData.soilMoisture2 = analogRead(soilPin2)/4095;
@@ -187,6 +203,12 @@ void loop() {
   
     currentData.temperature2 = isnan(s2) ? -1 : s2;
     currentData.humidity = isnan(h1) ? -1 : h1;
+
+
+    #ifdef DEBUG
+    Serial.printf("time: %d T1 = %.2f, T2 = %.2f, L = %.2f, S1 = %.2f, S2 = %.2f, H = %.2f\n",
+      currentData.timestamp, currentData.temperature1, currentData.temperature2, currentData.light, currentData.soilMoisture1, currentData.soilMoisture2, currentData.humidity);
+    #endif
 
     if (saveToSD && sdmemory.isSetup() && sdmemory.getRemainingRecords() > 0){
       if (!sdmemory.writeData(currentData)) {

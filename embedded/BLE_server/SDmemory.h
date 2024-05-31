@@ -69,8 +69,8 @@ bool writeFile(fs::FS &fs, const char * path, const char * message){
 
 class SensorData {
   public:
-    int soilMoisture1 = -1;
-    int soilMoisture2 = -1;
+    float soilMoisture1 = -1.0;
+    float soilMoisture2 = -1.0;
     float temperature1 = -1.0;
     float temperature2 = -1.0;
     float temperature3 = -1.0;

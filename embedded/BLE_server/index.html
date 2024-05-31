@@ -186,21 +186,21 @@
           <div class="widget-card">
             <div>
               <i class="fas fa-thermometer-half widget-icon"></i>
-              <div class="widget-title">Temp Sensor 1</div>
+              <div class="widget-title">Temp 1</div>
             </div>
             <div class="widget-value" id="tempSensor1">NaN</div>
           </div>
           <div class="widget-card">
             <div>
               <i class="fas fa-thermometer-half widget-icon"></i>
-              <div class="widget-title">Temp Sensor 2</div>
+              <div class="widget-title">Temp 2</div>
             </div>
             <div class="widget-value" id="tempSensor2">NaN</div>
           </div>
           <div class="widget-card">
             <div>
               <i class="fas fa-lightbulb widget-icon"></i>
-              <div class="widget-title">Light Percentage</div>
+              <div class="widget-title">Light</div>
             </div>
             <div class="widget-value" id="lightPercent">NaN</div>
           </div>
@@ -346,21 +346,35 @@
             labels: [],
             datasets: [
               {
-                label: "Temperature Sensors",
+                label: "Temperature 1",
                 yAxisID: "y-degrees",
                 data: [],
                 borderColor: "rgba(75, 192, 192, 1)",
                 borderWidth: 1,
               },
               {
-                label: "Light Percentage",
+                label: "Temperature 2",
+                yAxisID: "y-degrees",
+                data: [],
+                borderColor: "rgba(75, 192, 192, 1)",
+                borderWidth: 1,
+              },
+              {
+                label: "Light",
                 yAxisID: "y-percentage",
                 data: [],
                 borderColor: "rgba(255, 206, 86, 1)",
                 borderWidth: 1,
               },
               {
-                label: "Soil Moisture",
+                label: "Soil Moisture 1",
+                yAxisID: "y-percentage",
+                data: [],
+                borderColor: "rgba(153, 102, 255, 1)",
+                borderWidth: 1,
+              },
+              {
+                label: "Soil Moisture 2",
                 yAxisID: "y-percentage",
                 data: [],
                 borderColor: "rgba(153, 102, 255, 1)",
@@ -439,16 +453,20 @@
           }
 
           const labels = storedData.map((data) => data.timestamp);
-          const tempData = storedData.map((data) => data.temp1);
+          const tempData1 = storedData.map((data) => data.temp1);
+          const tempData2 = storedData.map((data) => data.temp2);
           const lightData = storedData.map((data) => data.light);
-          const soilMoistureData = storedData.map((data) => data.soilMoisture1);   
+          const soilMoistureData1 = storedData.map((data) => data.soilMoisture1);   
+          const soilMoistureData2 = storedData.map((data) => data.soilMoisture2);
           const humidityData = storedData.map((data) => data.humidity);       
 
           myChart.data.labels = labels;
-          myChart.data.datasets[0].data = tempData;
-          myChart.data.datasets[1].data = lightData;
-          myChart.data.datasets[2].data = soilMoistureData;
-          myChart.data.datasets[3].data = humidityData;
+          myChart.data.datasets[0].data = tempData1;
+          myChart.data.datasets[1].data = tempData2;
+          myChart.data.datasets[2].data = lightData;
+          myChart.data.datasets[3].data = soilMoistureData1;
+          myChart.data.datasets[4].data = soilMoistureData2;
+          myChart.data.datasets[5].data = humidityData;
           myChart.update();
         }
 
@@ -674,6 +692,7 @@
             light: light*100,
             soilMoisture1: soil1*100,
             soilMoisture2: soil2*100,
+            humidity: humidity,
             timestamp: new Date().getTime(),
           };
 
