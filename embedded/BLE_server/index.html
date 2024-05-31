@@ -666,7 +666,7 @@
           soilMoisture1.innerHTML = soil1 !== null ? soil1*100 : "N/A";
           soilMoisture2.innerHTML = soil2 !== null  ? soil2*100 : "N/A";
           humiditySensor.innerHTML = humidity !== null ? humidity : "N/A";
-          wifiStatus.innerHTML = wifi == 3 ? "Connected" : "Not Connected";
+          wifiStatus.innerHTML = wifi == 3 ? "Connected" : "😢";
 
           const newData = {
             temp1: temp1,
@@ -688,7 +688,10 @@
 
           updateChart();
 
-          updateTime.innerHTML = "Last updated: " + new Date().toLocaleString();
+            const currentTime = new Date();
+            const hours = currentTime.getHours();
+            const minutes = currentTime.getMinutes();
+            updateTime.innerHTML = hours + ":" + minutes;
         }
 
         function disconnectDevice() {

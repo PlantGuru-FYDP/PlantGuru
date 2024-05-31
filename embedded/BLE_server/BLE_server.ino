@@ -49,7 +49,7 @@ class MyServerCallbacks : public BLEServerCallbacks {
 
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* pWifiCharacteristic) {
-    String value = pWifiCharacteristic->getValue();
+    std::string value = pWifiCharacteristic->getValue();
     if (value.length() > 0) {
       Serial.print("Characteristic event, written: ");
       Serial.println(value.c_str());  // Print the written value
