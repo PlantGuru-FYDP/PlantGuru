@@ -81,6 +81,8 @@ void setup() {
 
   Serial.begin(115200);
 
+  sensors.begin();
+
   // Create the BLE Device
   BLEDevice::init("PlantGuru");
 
