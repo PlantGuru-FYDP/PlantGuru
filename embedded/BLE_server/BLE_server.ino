@@ -82,6 +82,7 @@ void setup() {
   Serial.begin(115200);
 
   sensors.begin();
+  dht.begin();
 
   // Create the BLE Device
   BLEDevice::init("PlantGuru");
@@ -181,8 +182,8 @@ void loop() {
     currentData.soilMoisture2 = analogRead(soilPin2)/4095;
     currentData.timestamp = millis();
 
-    float s2 = dht.readTemperature(false, true);
-    float h1 = dht.readHumidity(true);
+    float s2 = dht.readTemperature();
+    float h1 = dht.readHumidity();
   
     currentData.temperature2 = isnan(s2) ? -1 : s2;
     currentData.humidity = isnan(h1) ? -1 : h1;
