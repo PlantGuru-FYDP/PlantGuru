@@ -8,19 +8,13 @@
 #include <WiFi.h>
 #include "req.h"
 #include "DHT.h"
+#include "constants.h"
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pSensorCharacteristic = NULL;
 BLECharacteristic* pWifiCharacteristic = NULL;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
-
-#define lightPin A0
-#define soilPin1 A1
-#define soilPin2 A2
-#define DHT22_PIN D4
-#define DS18S20_Pin D7
-#define DHTTYPE DHT22
 
 OneWire oneWire(DS18S20_Pin);
 DallasTemperature sensors(&oneWire);
@@ -31,7 +25,7 @@ String wifiSSID = "";
 String wifiPASS = "ECE358PROBLEM";
 
 uint32_t SensorUpdate = 0;
-uint8_t sensorUpdateInterval = 5000;
+uint8_t sensorUpdateInterval = 5 * 1000;
 bool saveToSD = true;
 
 SDmemory sdmemory;
@@ -55,7 +49,7 @@ class MyServerCallbacks : public BLEServerCallbacks {
 
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* pWifiCharacteristic) {
-    std::string value = pWifiCharacteristic->getValue();
+    String value = pWifiCharacteristic->getValue();
     if (value.length() > 0) {
       Serial.print("Characteristic event, written: ");
       Serial.println(value.c_str());  // Print the written value
@@ -180,13 +174,13 @@ void loop() {
     //float s2 = sensors.getTempCByIndex(1); 
     currentData.temperature1 = s1 < 0 ? -1: s1;
     //currentData.temperature2 = s2 < 0 ? -1: s2;
-    currentData.light = analogRead(lightPin)*3.3/4095;
-    currentData.soilMoisture1 = analogRead(soilPin1)*3.3/4095;
-    currentData.soilMoisture2 = analogRead(soilPin2)*3.3/4095;
+    currentData.light = analogRead(lightPin)/4095;
+    currentData.soilMoisture1 = analogRead(soilPin1)/4095;
+    currentData.soilMoisture2 = analogRead(soilPin2)/4095;
     currentData.timestamp = millis();
 
-    float s2 = dht.readTemperature();
-    float h1 = dht.readHumidity();
+    float s2 = dht.readTemperature(false, true);
+    float h1 = dht.readHumidity(true);
   
     currentData.temperature2 = isnan(s2) ? -1 : s2;
     currentData.humidity = isnan(h1) ? -1 : h1;

@@ -15,6 +15,7 @@
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
+#include "constants.h"
 
 void createDir(fs::FS &fs, const char * path){
     Serial.printf("Creating Dir: %s\n", path);
@@ -90,7 +91,7 @@ class SDmemory {
   public:
     // Creates the file if it doesn't exist and makes sure the connection is good
     bool init() {
-      if(!SD.begin(D6, SPI, 4000000,"/sd",5)){
+      if(!SD.begin(SD_PIN, SPI, 4000000,"/sd",5)){
       return false;
       }
       if (SD.cardType() == CARD_NONE) {
