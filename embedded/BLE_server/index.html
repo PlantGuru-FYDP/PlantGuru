@@ -1,321 +1,278 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlantGuru</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <style>
-      body {
-        background: linear-gradient(to right, #e0f7f9, #b2dfdb);
-        color: #333;
-        font-family: "Arial", sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-        overflow: hidden;
-      }
-      .container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        padding: 20px;
-        width: 90%;
-        max-width: 1200px;
-      }
-      .header {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-        align-items: center;
-      }
-      .logo {
-        font-size: 2.5rem;
-        color: #1d6d5f;
-      }
-      .gear-icon {
-        font-size: 1.5rem;
-        color: #1d6d5f;
-        cursor: pointer;
-      }
-      .dashboard {
-        display: flex;
-        width: 100%;
-        margin-top: 20px;
-      }
-      .sensor-panel {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-around;
-      }
-      .widget-card {
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        position: relative;
-        margin-bottom: 20px;
-      }
-      .widget-card:last-child {
-        margin-bottom: 0;
-      }
-      .widget-icon {
-        font-size: 2rem;
-        color: #1d6d5f;
-      }
-      .widget-title {
-        font-size: 1.25rem;
-        margin-top: 10px;
-      }
-      .widget-value {
-        font-size: 2rem;
-        color: #2a9d8f;
-      }
-      .modal-content {
-        padding: 20px;
-      }
-      .settings-form .form-control {
-        margin-bottom: 15px;
-      }
-      .p2 > .widget-card {
-        margin-left: 20px;
-      }
-    </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
-  </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <h1 class="logo">PlantGuru</h1>
-        
-        <i
-          class="fas fa-cog gear-icon"
-          data-bs-toggle="modal"
-          data-bs-target="#settingsModal"
-        ></i>
-      </div>
-      <div>
-        <button id="connectBleButton" class="btn btn-primary">
-          Connect to BLE Device
-        </button>
-        <button id="disconnectBleButton" class="btn btn-secondary">
-          Disconnect BLE Device
-        </button>
-        <p class="gray-label">
-          BLE state:
-          <strong
-            ><span id="bleState" style="color: #d13a30"
-              >Disconnected</span
-            ></strong
-          >
-        </p>
-      </div>
-      <div class="dashboard">
-        <div
-          style="
-            flex: 2;
-            background-color: #fff;
-            border-radius: 10px;
-            padding: 20px;
-            margin-right: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            max-height: fit-content;
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            background: linear-gradient(to right, #e0f7f9, #b2dfdb);
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            margin: 0;
             display: flex;
             flex-direction: column;
-          "
-        >
-        <div class="form-group">
-          
-          <label for="filterType" class="form-label">Filter Data:</label>
-          <div style="display:flex;">
-            <select id="filterType" class="form-select" style="margin:10px;">
-              <option value="all">All</option>
-              <option value="dataPoints">Custom number of data points</option>
-              <option value="timeSpan">Custom timespan</option>
-            </select>
-            <div id="dataPointsInput" class="mt-3" style="display: none; margin:10px;">
-              <input type="number" id="numberOfDataPoints" class="form-control" placeholder="Number of data points" />
-            </div>
-            <div id="timeSpanInputs" class="mt-3" style="display: none; margin:10px;">
-              <div class="d-flex">
-                <input type="number" id="secondsInput" class="form-control me-2" placeholder="S" />
-                <input type="number" id="minutesInput" class="form-control me-2" placeholder="M" />
-                <input type="number" id="hoursInput" class="form-control me-2" placeholder="H" />
-                <input type="number" id="daysInput" class="form-control" placeholder="D" />
-              </div>
-            </div>
-            <button class="btn btn-primary mt-3" id="applyFilterButton" style="margin:10px; text-wrap:nowrap;">Apply Filter</button>
-          </div>
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .logo {
+            font-size: 2.5rem;
+            color: #1d6d5f;
+        }
+        .gear-icon, .filter-icon, .bluetooth-icon {
+            font-size: 1.5rem;
+            color: #1d6d5f;
+            cursor: pointer;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+        }
+        .chart-container {
+            flex: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sensor-panel {
+            flex: 1;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .widget-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            width: 100%;
+        }
+        .widget-icon {
+            font-size: 1.5rem;
+            color: #1d6d5f;
+        }
+        .widget-title {
+            font-size: 1rem;
+        }
+        .widget-value {
+            font-size: 1.5rem;
+            color: #2a9d8f;
+        }
+        .widget-card >div> i {
+            font-size: small;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="logo">PlantGuru</h1>
+        <div>
+            <i class="fas fa-filter filter-icon" data-bs-toggle="modal" data-bs-target="#filterModal"></i>
+            <i class="fa fa-bluetooth bluetooth-icon" data-bs-toggle="modal" data-bs-target="#bluetoothModal"></i>
+            <i class="fas fa-wifi wifi-icon" data-bs-toggle="modal" data-bs-target="#wifiModal"></i>
+            <i class="fas fa-cog gear-icon" data-bs-toggle="modal" data-bs-target="#settingsModal"></i>
         </div>
-
-        <div style="flex: 1">
-          <canvas id="myChart" style="height: 100%; width: 100%"></canvas>
-        </div>
-        <div style="display: flex; justify-content: space-between">
-          <button class="btn btn-primary" id="downloadCSVButton">
-            Save to CSV
-          </button>
-          <button class="btn btn-danger" id="deleteStorage">
-            Clear data
-          </button>
-        </div>
-
+    </div>
+    <div class="main-content">
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
         </div>
         <div class="sensor-panel">
-          <div class="widget-card">
-            <div>
-              <i class="fas fa-thermometer-half widget-icon"></i>
-              <div class="widget-title">Temp 1</div>
+            <div class="widget-card">
+                <div>
+                    <i class="fas fa-thermometer-half widget-icon"></i>
+                    <div class="widget-title">Temp 1</div>
+                </div>
+                <div class="widget-value" id="tempSensor1">NaN</div>
             </div>
-            <div class="widget-value" id="tempSensor1">NaN</div>
-          </div>
-          <div class="widget-card">
-            <div>
-              <i class="fas fa-thermometer-half widget-icon"></i>
-              <div class="widget-title">Temp 2</div>
+            <div class="widget-card">
+                <div>
+                    <i class="fas fa-thermometer-half widget-icon"></i>
+                    <div class="widget-title">Temp 2</div>
+                </div>
+                <div class="widget-value" id="tempSensor2">NaN</div>
             </div>
-            <div class="widget-value" id="tempSensor2">NaN</div>
-          </div>
-          <div class="widget-card">
-            <div>
-              <i class="fas fa-lightbulb widget-icon"></i>
-              <div class="widget-title">Light</div>
+            <div class="widget-card">
+                <div>
+                    <i class="fas fa-lightbulb widget-icon"></i>
+                    <div class="widget-title">Light</div>
+                </div>
+                <div class="widget-value" id="lightPercent">NaN</div>
             </div>
-            <div class="widget-value" id="lightPercent">NaN</div>
-          </div>
-          <div class="widget-card">
-            <div>
-              <i class="fas fa-water widget-icon"></i>
-              <div class="widget-title">Soil Moisture 1</div>
+            <div class="widget-card">
+                <div>
+                    <i class="fas fa-water widget-icon"></i>
+                    <div class="widget-title">Soil Moisture 1</div>
+                </div>
+                <div class="widget-value" id="soilMoisture1">NaN</div>
             </div>
-            <div class="widget-value" id="soilMoisture1">NaN</div>
-          </div>
+            <div class="widget-card">
+                <div>
+                    <i class="fas fa-water widget-icon"></i>
+                    <div class="widget-title">Soil Moisture 2</div>
+                </div>
+                <div class="widget-value" id="soilMoisture2">NaN</div>
+            </div>
+            <div class="widget-card">
+                <div>
+                    <i class="fas fa-tint widget-icon"></i>
+                    <div class="widget-title">Humidity</div>
+                </div>
+                <div class="widget-value" id="humiditySensor">NaN</div>
+            </div>
+            <div class="widget-card">
+                <div>
+                    <i class="fas fa-wifi widget-icon"></i>
+                    <div class="widget-title">WiFi</div>
+                </div>
+                <div class="widget-value" id="wifiStatus">Disconnected</div>
+            </div>
+            <div class="widget-card">
+                <div>
+                    <i class="fas fa-clock widget-icon"></i>
+                    <div class="widget-title">Update</div>
+                </div>
+                <div class="widget-value" id="updateTime">N/A</div>
+            </div>
         </div>
-        <div class="sensor-panel p2">
-          <div class="widget-card">
-            <div>
-              <i class="fas fa-water widget-icon"></i>
-              <div class="widget-title">Soil Moisture 2</div>
-            </div>
-            <div class="widget-value" id="soilMoisture2">NaN</div>
-          </div>
-          <div class="widget-card">
-            <div>
-                <i class="fas fa-tint widget-icon"></i>
-              <div class="widget-title">Humidity</div>
-            </div>
-            <div class="widget-value" id="humiditySensor">NaN</div>
-          </div>
-          <div class="widget-card">
-            <div>
-              <i class="fas fa-wifi widget-icon"></i>
-              <div class="widget-title">WiFi</div>
-            </div>
-            <div class="widget-value" id="wifiStatus">Disconnected</div>
-          </div>
-          <div class="widget-card">
-            <div>
-              <i class="fas fa-clock widget-icon"></i>
-              <div class="widget-title">Update</div>
-            </div>
-            <div class="widget-value" id="updateTime">N/A</div>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
 
-    <!-- Modal -->
-    <div
-      class="modal fade"
-      id="settingsModal"
-      tabindex="-1"
-      aria-labelledby="settingsModalLabel"
-      aria-hidden="true"
-    >
+    <!-- Filter Modal -->
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterModalLabel">Filter Data</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="filterType" class="form-label">Filter Data:</label>
+                        <select id="filterType" class="form-select mb-3">
+                            <option value="all">All</option>
+                            <option value="dataPoints">Custom number of data points</option>
+                            <option value="timeSpan">Custom timespan</option>
+                        </select>
+                        <div id="dataPointsInput" class="mb-3" style="display: none;">
+                            <input type="number" id="numberOfDataPoints" class="form-control" placeholder="Number of data points">
+                        </div>
+                        <div id="timeSpanInputs" class="mb-3" style="display: none;">
+                            <div class="d-flex">
+                                <input type="number" id="secondsInput" class="form-control me-2" placeholder="S">
+                                <input type="number" id="minutesInput" class="form-control me-2" placeholder="M">
+                                <input type="number" id="hoursInput" class="form-control me-2" placeholder="H">
+                                <input type="number" id="daysInput" class="form-control" placeholder="D">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="applyFilterButton">Apply Filter</button>
+                    </div>
+                    <button class="btn btn-primary mt-3" id="downloadCSVButton">Save to CSV</button>
+                    <button class="btn btn-danger mt-3" id="deleteStorage">
+                      Clear data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bluetooth Modal -->
+    <div class="modal fade" id="bluetoothModal" tabindex="-1" aria-labelledby="bluetoothModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bluetoothModalLabel">Bluetooth Connection</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <button id="connectBleButton" class="btn btn-primary">Connect to BLE Device</button>
+                    <button id="disconnectBleButton" class="btn btn-secondary">Disconnect BLE Device</button>
+                    <p>BLE state: <strong><span id="bleState" style="color: #d13a30">Disconnected</span></strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WiFi Modal -->
+    <div class="modal fade" id="wifiModal" tabindex="-1" aria-labelledby="wifiModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="settingsModalLabel">WiFi Settings</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <form class="settings-form">
               <div class="mb-3">
                 <label for="ssid" class="form-label">SSID</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="ssid"
-                  value="Data City 263 - 2.4GHz"
-                />
+                <input type="text" class="form-control" id="ssid" value="Data City 263 - 2.4GHz">
               </div>
               <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="password"
-                />
+                <input type="password" class="form-control" id="password">
               </div>
-              <div class="mb-3">
-                <label for="uploadFrequency" class="form-label"
-                  >Upload Frequency</label
-                >
-                <input
-                  type="number"
-                  class="form-control"
-                  id="uploadFrequency"
-                  placeholder="Frequency in seconds"
-                />
-              </div>
-              <button
-                type="button"
-                class="btn btn-primary"
-                id="saveSettingsButton"
-              >
-                Save Settings
-              </button>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                id="reconnectWiFiButton"
-              >
-                Reconnect WiFi
-              </button>
+              <button type="button" class="btn btn-secondary" id="reconnectWiFiButton">Reconnect WiFi</button>
             </form>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- clear data warning modal-->
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="settingsModalLabel">System Settings</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form class="settings-form">
+              <div class="mb-3">
+                <label for="uploadPeriod" class="form-label">Bluetooth Upload Period (ms)</label>
+                <input type="number" class="form-control" id="uploadPeriod" placeholder="Frequency in seconds" value="3000">
+              </div>
+              <div class="mb-3">
+                <label for="wifiUploadPeriod" class="form-label">WiFi Upload Period (ms)</label>
+                <input type="number" class="form-control" id="wifiUploadPeriod" placeholder="Frequency in seconds">
+              </div>
+              <div class="mb-3">
+                <label for="sensorRecordingPeriod" class="form-label">Sensor Recording Period (ms)</label>
+                <input type="number" class="form-control" id="sensorRecordingPeriod" placeholder="Frequency in seconds" value="3000">
+              </div>
+              <div class="mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="sdRecording">
+                  <label class="form-check-label" for="sdRecording">Enable SD Recording</label>
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary" id="saveSettingsButton">Save Settings</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clear Data Modal -->
     <div class="modal fade" id="clearDataModal" tabindex="-1" aria-labelledby="clearDataModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -334,513 +291,540 @@
       </div>
     </div>
 
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"
-    ></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const ctx = document.getElementById("myChart").getContext("2d");
-        const myChart = new Chart(ctx, {
-          type: "line",
-          data: {
-            labels: [],
-            datasets: [
-              {
-                label: "Temperature 1",
-                yAxisID: "y-degrees",
-                data: [],
-                borderColor: "rgba(75, 192, 192, 1)",
-                borderWidth: 1,
-              },
-              {
-                label: "Temperature 2",
-                yAxisID: "y-degrees",
-                data: [],
-                borderColor: "rgba(75, 192, 192, 1)",
-                borderWidth: 1,
-              },
-              {
-                label: "Light",
-                yAxisID: "y-percentage",
-                data: [],
-                borderColor: "rgba(255, 206, 86, 1)",
-                borderWidth: 1,
-              },
-              {
-                label: "Soil Moisture 1",
-                yAxisID: "y-percentage",
-                data: [],
-                borderColor: "rgba(153, 102, 255, 1)",
-                borderWidth: 1,
-              },
-              {
-                label: "Soil Moisture 2",
-                yAxisID: "y-percentage",
-                data: [],
-                borderColor: "rgba(153, 102, 255, 1)",
-                borderWidth: 1,
-              },
-              {
-                label: "Humidity",
-                yAxisID: "y-percentage",
-                data: [],
-                borderColor: "rgba(255, 99, 132, 1)",
-                borderWidth: 1,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: {
-                type: "time",
-                time: {
-                  unit: "minute",
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const ctx = document.getElementById("myChart").getContext("2d");
+          const myChart = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: [],
+              datasets: [
+                {
+                  label: "Temperature 1",
+                  yAxisID: "y-degrees",
+                  data: [],
+                  borderColor: "rgba(75, 192, 192, 1)",
+                  borderWidth: 1,
                 },
-                displayFormats: {
-                  minute: 'HH:mm'
+                {
+                  label: "Temperature 2",
+                  yAxisID: "y-degrees",
+                  data: [],
+                  borderColor: "rgba(75, 192, 192, 1)",
+                  borderWidth: 1,
                 },
-                tooltipFormat: 'HH:mm'
-              },
-              "y-degrees": {
-                type: "linear",
-                position: "left",
-                beginAtZero: true,
-                ticks: {
-                  callback: function (value) {
-                    return value + "°C";
+                {
+                  label: "Light",
+                  yAxisID: "y-percentage",
+                  data: [],
+                  borderColor: "rgba(255, 206, 86, 1)",
+                  borderWidth: 1,
+                },
+                {
+                  label: "Soil Moisture 1",
+                  yAxisID: "y-percentage",
+                  data: [],
+                  borderColor: "rgba(153, 102, 255, 1)",
+                  borderWidth: 1,
+                },
+                {
+                  label: "Soil Moisture 2",
+                  yAxisID: "y-percentage",
+                  data: [],
+                  borderColor: "rgba(153, 102, 255, 1)",
+                },
+                {
+                  label: "Humidity",
+                  yAxisID: "y-percentage",
+                  data: [],
+                  borderColor: "rgba(255, 99, 132, 1)",
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: {
+                  type: "time",
+                  time: {
+                    unit: "minute",
+                  },
+                  displayFormats: {
+                    minute: "HH:mm",
+                  },
+                  tooltipFormat: "HH:mm",
+                },
+                "y-degrees": {
+                  type: "linear",
+                  position: "left",
+                  beginAtZero: true,
+                  ticks: {
+                    callback: function (value) {
+                      return value + "°C";
+                    },
+                  },
+                  title: {
+                    display: true,
+                    text: "Degrees Celsius",
                   },
                 },
-                title: {
-                  display: true,
-                  text: "Degrees Celsius",
-                },
-              },
-              "y-percentage": {
-                type: "linear",
-                position: "right",
-                beginAtZero: true,
-                ticks: {
-                  callback: function (value) {
-                    return value + "%";
+                "y-percentage": {
+                  type: "linear",
+                  position: "right",
+                  beginAtZero: true,
+                  ticks: {
+                    callback: function (value) {
+                      return value + "%";
+                    },
                   },
-                },
-                title: {
-                  display: true,
-                  text: "Percentage",
-                },
-                grid: {
-                  drawOnChartArea: false,
+                  title: {
+                    display: true,
+                    text: "Percentage",
+                  },
+                  grid: {
+                    drawOnChartArea: false,
+                  },
                 },
               },
             },
-          },
-        });
+          });
 
-        function updateChart() {
-          let storedData =
-            JSON.parse(localStorage.getItem("sensorData")) || [];
+          function updateChart() {
+            let storedData =
+              JSON.parse(localStorage.getItem("sensorData")) || [];
 
-          if (chartFilter === "dataPoints") {
-            storedData = storedData.slice(-chartCutoffValue);
-          } else if (chartFilter === "timeSpan") {
-            const currentTime = Date.now();
-            storedData = storedData.filter((data) => {
-              const dataTime = new Date(data.timestamp).getTime();
-              return currentTime - dataTime <= chartCutoffValue;
-            });
+            if (chartFilter === "dataPoints") {
+              storedData = storedData.slice(-chartCutoffValue);
+            } else if (chartFilter === "timeSpan") {
+              const currentTime = Date.now();
+              storedData = storedData.filter((data) => {
+                const dataTime = new Date(data.timestamp).getTime();
+                return currentTime - dataTime <= chartCutoffValue;
+              });
+            }
+
+            const labels = storedData.map((data) => data.timestamp);
+            const tempData1 = storedData.map((data) => data.temp1);
+            const tempData2 = storedData.map((data) => data.temp2);
+            const lightData = storedData.map((data) => data.light);
+            const soilMoistureData1 = storedData.map(
+              (data) => data.soilMoisture1
+            );
+            const soilMoistureData2 = storedData.map(
+              (data) => data.soilMoisture2
+            );
+            const humidityData = storedData.map((data) => data.humidity);
+
+            myChart.data.labels = labels;
+            myChart.data.datasets[0].data = tempData1;
+            myChart.data.datasets[1].data = tempData2;
+            myChart.data.datasets[2].data = lightData;
+            myChart.data.datasets[3].data = soilMoistureData1;
+            myChart.data.datasets[4].data = soilMoistureData2;
+            myChart.data.datasets[5].data = humidityData;
+            myChart.update();
           }
 
-          const labels = storedData.map((data) => data.timestamp);
-          const tempData1 = storedData.map((data) => data.temp1);
-          const tempData2 = storedData.map((data) => data.temp2);
-          const lightData = storedData.map((data) => data.light);
-          const soilMoistureData1 = storedData.map((data) => data.soilMoisture1);   
-          const soilMoistureData2 = storedData.map((data) => data.soilMoisture2);
-          const humidityData = storedData.map((data) => data.humidity);       
+          // BLE and DOM elements
+          const connectButton = document.getElementById("connectBleButton");
+          const disconnectButton = document.getElementById(
+            "disconnectBleButton"
+          );
+          const tempSensor1 = document.getElementById("tempSensor1");
+          const tempSensor2 = document.getElementById("tempSensor2");
+          const lightPercent = document.getElementById("lightPercent");
+          const soilMoisture1 = document.getElementById("soilMoisture1");
+          const soilMoisture2 = document.getElementById("soilMoisture2");
+          const humiditySensor = document.getElementById("humiditySensor");
+          const wifiStatus = document.getElementById("wifiStatus");
+          const ssidInput = document.getElementById("ssid");
+          const passwordInput = document.getElementById("password");
+          const uploadFrequencyInput =
+            document.getElementById("uploadFrequency");
+          const saveSettingsButton =
+            document.getElementById("saveSettingsButton");
+          const downloadCSVButton =
+            document.getElementById("downloadCSVButton");
+          const reconnectWiFiButton = document.getElementById(
+            "reconnectWiFiButton"
+          );
+          const bleStateContainer = document.getElementById("bleState");
+          const updateTime = document.getElementById("updateTime");
 
-          myChart.data.labels = labels;
-          myChart.data.datasets[0].data = tempData1;
-          myChart.data.datasets[1].data = tempData2;
-          myChart.data.datasets[2].data = lightData;
-          myChart.data.datasets[3].data = soilMoistureData1;
-          myChart.data.datasets[4].data = soilMoistureData2;
-          myChart.data.datasets[5].data = humidityData;
-          myChart.update();
-        }
+          const clearDataButton = document.getElementById("deleteStorage");
+          const confirmClearDataButton =
+            document.getElementById("confirmClearData");
 
-        // BLE and DOM elements
-        const connectButton = document.getElementById("connectBleButton");
-        const disconnectButton = document.getElementById("disconnectBleButton");
-        const tempSensor1 = document.getElementById("tempSensor1");
-        const tempSensor2 = document.getElementById("tempSensor2");
-        const lightPercent = document.getElementById("lightPercent");
-        const soilMoisture1 = document.getElementById("soilMoisture1");
-        const soilMoisture2 = document.getElementById("soilMoisture2");
-        const humiditySensor = document.getElementById("humiditySensor");
-        const wifiStatus = document.getElementById("wifiStatus");
-        const ssidInput = document.getElementById("ssid");
-        const passwordInput = document.getElementById("password");
-        const uploadFrequencyInput = document.getElementById("uploadFrequency");
-        const saveSettingsButton =
-          document.getElementById("saveSettingsButton");
-        const downloadCSVButton = document.getElementById("downloadCSVButton");
-        const reconnectWiFiButton = document.getElementById(
-          "reconnectWiFiButton"
-        );
-        const bleStateContainer = document.getElementById("bleState");
-        const updateTime = document.getElementById("updateTime");
+          const filterType = document.getElementById("filterType");
+          const dataPointsInput = document.getElementById("dataPointsInput");
+          const timeSpanInputs = document.getElementById("timeSpanInputs");
+          var chartFilter = "all";
+          var chartCutoffValue = 0;
 
-        const clearDataButton = document.getElementById("deleteStorage");
-        const confirmClearDataButton = document.getElementById("confirmClearData");
+          // Define BLE Device Specs
+          var deviceName = "PlantGuru";
+          var bleService = "19b10000-e8f2-537e-4f6c-d104768a1214";
+          var sensorCharacteristic = "19b10001-e8f2-537e-4f6c-d104768a1214";
+          var wifiCharacteristic = "19b10002-e8f2-537e-4f6c-d104768a1214";
+          var settingsCharacteristic = "19b10003-e8f2-537e-4f6c-d104768a1214";
 
-        const filterType = document.getElementById("filterType");
-        const dataPointsInput = document.getElementById("dataPointsInput");
-        const timeSpanInputs = document.getElementById("timeSpanInputs");
-        var chartFilter = "all";
-        var chartCutoffValue = 0;
+          // Global Variables to Handle Bluetooth
+          var bleServer;
+          var bleServiceFound;
+          var sensorCharacteristicFound;
+          var wifiCharacteristicFound;
+          var settingsCharacteristicFound;
 
-        // Define BLE Device Specs
-        var deviceName = "PlantGuru";
-        var bleService = "19b10000-e8f2-537e-4f6c-d104768a1214";
-        var sensorCharacteristic = "19b10001-e8f2-537e-4f6c-d104768a1214";
-        var wifiCharacteristic = "19b10002-e8f2-537e-4f6c-d104768a1214";
+          // Connect Button (search for BLE Devices only if BLE is available)
+          connectButton.addEventListener("click", (event) => {
+            if (isWebBluetoothEnabled()) {
+              connectToDevice();
+            }
+          });
 
-        // Global Variables to Handle Bluetooth
-        var bleServer;
-        var bleServiceFound;
-        var sensorCharacteristicFound;
-        var wifiCharacteristicFound;
+          // Disconnect Button
+          disconnectButton.addEventListener("click", disconnectDevice);
 
-        // Connect Button (search for BLE Devices only if BLE is available)
-        connectButton.addEventListener("click", (event) => {
-          if (isWebBluetoothEnabled()) {
+          // Save Settings Button
+          saveSettingsButton.addEventListener("click", saveSettings);
+
+          // Reconnect WiFi Button
+          reconnectWiFiButton.addEventListener("click", reconnectWiFi);
+
+          // Download CSV Button
+          downloadCSVButton.addEventListener("click", downloadCSV);
+
+          // clear data
+          clearDataButton.addEventListener("click", function () {
+            $("#clearDataModal").modal("show");
+          });
+
+          confirmClearDataButton.addEventListener("click", function () {
+            localStorage.removeItem("sensorData");
+            updateChart();
+            $("#clearDataModal").modal("hide");
+          });
+
+          filterType.addEventListener("change", function () {
+            const selectedValue = filterType.value;
+            dataPointsInput.style.display =
+              selectedValue === "dataPoints" ? "block" : "none";
+            timeSpanInputs.style.display =
+              selectedValue === "timeSpan" ? "block" : "none";
+          });
+
+          document
+            .getElementById("applyFilterButton")
+            .addEventListener("click", function () {
+              const selectedValue = filterType.value;
+
+              if (selectedValue === "all") {
+                chartFilter = "all";
+                updateChart();
+              } else if (selectedValue === "dataPoints") {
+                const numberOfDataPoints = parseInt(
+                  document.getElementById("numberOfDataPoints").value
+                );
+                if (!isNaN(numberOfDataPoints)) {
+                  chartFilter = "dataPoints";
+                  chartCutoffValue = numberOfDataPoints;
+                  updateChart();
+                }
+              } else if (selectedValue === "timeSpan") {
+                const seconds =
+                  parseInt(document.getElementById("secondsInput").value) || 0;
+                const minutes =
+                  parseInt(document.getElementById("minutesInput").value) || 0;
+                const hours =
+                  parseInt(document.getElementById("hoursInput").value) || 0;
+                const days =
+                  parseInt(document.getElementById("daysInput").value) || 0;
+
+                const totalSeconds =
+                  seconds + minutes * 60 + hours * 3600 + days * 86400;
+                if (!isNaN(totalSeconds)) {
+                  chartFilter = "timeSpan";
+                  chartCutoffValue = totalSeconds * 1000;
+                  updateChart();
+                }
+              }
+            });
+
+          // Check if BLE is available in your Browser
+          function isWebBluetoothEnabled() {
+            if (!navigator.bluetooth) {
+              console.log(
+                "Web Bluetooth API is not available in this browser!"
+              );
+              bleStateContainer.innerHTML =
+                "Web Bluetooth API is not available in this browser/device!";
+              return false;
+            }
+            console.log("Web Bluetooth API supported in this browser.");
+            return true;
+          }
+
+          // Connect to BLE Device and Enable Notifications
+          function connectToDevice() {
+            console.log("Initializing Bluetooth...");
+            navigator.bluetooth
+              .requestDevice({
+                filters: [{ name: deviceName }],
+                optionalServices: [bleService],
+              })
+              .then((device) => {
+                console.log("Device Selected:", device.name);
+                bleStateContainer.innerHTML =
+                  "Connected to device " + device.name;
+                bleStateContainer.style.color = "#24af37";
+                device.addEventListener(
+                  "gattservicedisconnected",
+                  onDisconnected
+                );
+                return device.gatt.connect();
+              })
+              .then((gattServer) => {
+                bleServer = gattServer;
+                console.log("Connected to GATT Server");
+                return bleServer.getPrimaryService(bleService);
+              })
+              .then((service) => {
+                bleServiceFound = service;
+                console.log("Service discovered:", service.uuid);
+                return Promise.all([
+                  service.getCharacteristic(sensorCharacteristic),
+                  service.getCharacteristic(wifiCharacteristic),
+                  service.getCharacteristic(settingsCharacteristic),
+                ]);
+              })
+              .then((characteristics) => {
+                sensorCharacteristicFound = characteristics[0];
+                wifiCharacteristicFound = characteristics[1];
+                settingsCharacteristicFound = characteristics[2];
+
+                sensorCharacteristicFound.addEventListener(
+                  "characteristicvaluechanged",
+                  handleCharacteristicChange
+                );
+                sensorCharacteristicFound.startNotifications();
+
+                wifiCharacteristicFound.addEventListener(
+                  "characteristicvaluechanged",
+                  handleWiFiStatusChange
+                );
+                wifiCharacteristicFound.startNotifications();
+
+                settingsCharacteristicFound.addEventListener(
+                  "characteristicvaluechanged",
+                  handleSettingsChange
+                );
+                settingsCharacteristicFound.startNotifications();
+
+
+                console.log("Notifications Started.");
+
+                return Promise.all([
+                  sensorCharacteristicFound.readValue(),
+                  wifiCharacteristicFound.readValue(),
+                  settingsCharacteristicFound.readValue(),
+                ]);
+              })
+              .then((values) => {
+                handleCharacteristicChange({ target: { value: values[0] } });
+                handleWiFiStatusChange({ target: { value: values[1] } });
+                handleSettingsChange({ target: { value: values[2] } });
+              })
+              .catch((error) => {
+                console.log("Error: ", error);
+              });
+          }
+
+          function onDisconnected(event) {
+            console.log("Device Disconnected:", event.target.device.name);
+            bleStateContainer.innerHTML = "Device disconnected";
+            bleStateContainer.style.color = "#d13a30";
+
             connectToDevice();
           }
-        });
 
-        // Disconnect Button
-        disconnectButton.addEventListener("click", disconnectDevice);
+          function handleCharacteristicChange(event) {
+            console.log("Handling characteristic change...");
+            const value = event.target.value;
+            console.log("Received value:", value);
+            const dataString = new TextDecoder().decode(value);
+            let [temp1, temp2, light, soil1, soil2, humidity, wifi] = dataString
+              .split(",")
+              .map(Number);
 
-        // Save Settings Button
-        saveSettingsButton.addEventListener("click", saveSettings);
+            // for each, set to null if its value is -1
+            if (temp1 === -1) temp1 = null;
+            if (temp2 === -1) temp2 = null;
+            if (light === -1) light = null;
+            if (soil1 === -1) soil1 = null;
+            if (soil2 === -1) soil2 = null;
+            if (humidity === -1) humidity = null;
 
-        // Reconnect WiFi Button
-        reconnectWiFiButton.addEventListener("click", reconnectWiFi);
+            tempSensor1.innerHTML = temp1 ? temp1.toFixed(1) + " C" : "N/A";
+            tempSensor2.innerHTML = temp2 ? temp2.toFixed(1) + " C" : "N/A";
+            lightPercent.innerHTML =
+              light !== null ? light.toFixed(1) + " %" : "N/A";
+            soilMoisture1.innerHTML =
+              soil1 !== null ? soil1.toFixed(1) + " %" : "N/A";
+            soilMoisture2.innerHTML =
+              soil2 !== null ? soil2.toFixed(1) + " %" : "N/A";
+            humiditySensor.innerHTML =
+              humidity !== null ? humidity.toFixed(1) + " %" : "N/A";
+            wifiStatus.innerHTML = wifi == 3 ? "Connected" : "😢";
 
-        // Download CSV Button
-        downloadCSVButton.addEventListener("click", downloadCSV);
+            const newData = {
+              temp1: temp1,
+              temp2: temp2,
+              light: light,
+              soilMoisture1: soil1,
+              soilMoisture2: soil2,
+              humidity: humidity,
+              timestamp: new Date().getTime(),
+            };
 
-        // clear data
-        clearDataButton.addEventListener("click", function() {
-          $('#clearDataModal').modal('show');
-        });
+            console.log("New data:", newData);
 
-        confirmClearDataButton.addEventListener("click", function() {
-          localStorage.removeItem("sensorData");
-          updateChart();
-          $('#clearDataModal').modal('hide');
-        });
+            const storedData =
+              JSON.parse(localStorage.getItem("sensorData")) || [];
+            storedData.push(newData);
+            localStorage.setItem("sensorData", JSON.stringify(storedData));
 
-        filterType.addEventListener("change", function () {
-          const selectedValue = filterType.value;
-          dataPointsInput.style.display = selectedValue === "dataPoints" ? "block" : "none";
-          timeSpanInputs.style.display = selectedValue === "timeSpan" ? "block" : "none";
-        });
+            console.log("Stored data:", storedData);
 
-        document.getElementById("applyFilterButton").addEventListener("click", function () {
-          const selectedValue = filterType.value;
-
-          if (selectedValue === "all") {
-            chartFilter = "all";
             updateChart();
-          } else if (selectedValue === "dataPoints") {
-            const numberOfDataPoints = parseInt(document.getElementById("numberOfDataPoints").value);
-            if (!isNaN(numberOfDataPoints)) {
-              chartFilter = "dataPoints";
-              chartCutoffValue = numberOfDataPoints;
-              updateChart();
-            }
-          } else if (selectedValue === "timeSpan") {
-            const seconds = parseInt(document.getElementById("secondsInput").value) || 0;
-            const minutes = parseInt(document.getElementById("minutesInput").value) || 0;
-            const hours = parseInt(document.getElementById("hoursInput").value) || 0;
-            const days = parseInt(document.getElementById("daysInput").value) || 0;
-            
-            const totalSeconds = seconds + minutes * 60 + hours * 3600 + days * 86400;
-            if (!isNaN(totalSeconds)) {
-              chartFilter = "timeSpan";
-              chartCutoffValue = totalSeconds * 1000;
-              updateChart();
-            }
-          }
-        });
-
-        // Check if BLE is available in your Browser
-        function isWebBluetoothEnabled() {
-          if (!navigator.bluetooth) {
-            console.log("Web Bluetooth API is not available in this browser!");
-            bleStateContainer.innerHTML =
-              "Web Bluetooth API is not available in this browser/device!";
-            return false;
-          }
-          console.log("Web Bluetooth API supported in this browser.");
-          return true;
-        }
-
-        // Connect to BLE Device and Enable Notifications
-        function connectToDevice() {
-          console.log("Initializing Bluetooth...");
-          navigator.bluetooth
-            .requestDevice({
-              filters: [{ name: deviceName }],
-              optionalServices: [bleService],
-            })
-            .then((device) => {
-              console.log("Device Selected:", device.name);
-              bleStateContainer.innerHTML =
-                "Connected to device " + device.name;
-              bleStateContainer.style.color = "#24af37";
-              device.addEventListener(
-                "gattservicedisconnected",
-                onDisconnected
-              );
-              return device.gatt.connect();
-            })
-            .then((gattServer) => {
-              bleServer = gattServer;
-              console.log("Connected to GATT Server");
-              return bleServer.getPrimaryService(bleService);
-            })
-            .then((service) => {
-              bleServiceFound = service;
-              console.log("Service discovered:", service.uuid);
-              return Promise.all([
-                service.getCharacteristic(sensorCharacteristic),
-                service.getCharacteristic(wifiCharacteristic),
-              ]);
-            })
-            .then((characteristics) => {
-              sensorCharacteristicFound = characteristics[0];
-              wifiCharacteristicFound = characteristics[1];
-
-              sensorCharacteristicFound.addEventListener(
-                "characteristicvaluechanged",
-                handleCharacteristicChange
-              );
-              sensorCharacteristicFound.startNotifications();
-              wifiCharacteristicFound.addEventListener(
-                "characteristicvaluechanged",
-                handleWiFiStatusChange
-              );
-              wifiCharacteristicFound.startNotifications();
-
-              console.log("Notifications Started.");
-
-              return Promise.all([
-                sensorCharacteristicFound.readValue(),
-                //wifiCharacteristicFound.readValue(),
-              ]);
-            })
-            .then((values) => {
-              handleCharacteristicChange({ target: { value: values[0] } });
-              handleWiFiStatusChange({ target: { value: values[1] } });
-            })
-            .catch((error) => {
-              console.log("Error: ", error);
-            });
-        }
-
-        function onDisconnected(event) {
-          console.log("Device Disconnected:", event.target.device.name);
-          bleStateContainer.innerHTML = "Device disconnected";
-          bleStateContainer.style.color = "#d13a30";
-
-          connectToDevice();
-        }
-
-        function handleCharacteristicChange(event) {
-          console.log("Handling characteristic change...");
-          const value = event.target.value;
-          console.log("Received value:", value);
-          const dataString = new TextDecoder().decode(value);
-          let [temp1, temp2, light, soil1, soil2, humidity, wifi] = dataString
-            .split(",")
-            .map(Number);
-
-          // for each, set to null if its value is -1
-          if (temp1 === -1) temp1 = null;
-          if (temp2 === -1) temp2 = null;
-          if (light === -1) light = null;
-          if (soil1 === -1) soil1 = null;
-          if (soil2 === -1) soil2 = null;
-          if (humidity === -1) humidity = null;
-
-
-          tempSensor1.innerHTML = temp1? temp1.toFixed(1) + " C": "N/A";
-          tempSensor2.innerHTML = temp2 ? temp2.toFixed(1) + " C": "N/A";
-          lightPercent.innerHTML = light !== null  ? (light).toFixed(1) + " %": "N/A";
-          soilMoisture1.innerHTML = soil1 !== null ? (soil1).toFixed(1) + " %": "N/A";
-          soilMoisture2.innerHTML = soil2 !== null  ? (soil2).toFixed(1) + " %": "N/A";
-          humiditySensor.innerHTML = humidity !== null ? humidity.toFixed(1) + " %": "N/A";
-          wifiStatus.innerHTML = wifi == 3 ? "Connected" : "😢";
-
-          const newData = {
-            temp1: temp1.toFixed(1),
-            temp2: temp2.toFixed(1),
-            light: light.toFixed(1),
-            soilMoisture1: soil1.toFixed(1),
-            soilMoisture2: soil2.toFixed(1),
-            humidity: humidity.toFixed(1),
-            timestamp: new Date().getTime(),
-          };
-
-          console.log("New data:", newData);
-
-          const storedData =
-            JSON.parse(localStorage.getItem("sensorData")) || [];
-          storedData.push(newData);
-          localStorage.setItem("sensorData", JSON.stringify(storedData));
-
-          console.log("Stored data:", storedData);
-
-          updateChart();
 
             const currentTime = new Date();
             const hours = currentTime.getHours();
             const minutes = currentTime.getMinutes();
             updateTime.innerHTML = hours + ":" + minutes;
-        }
+          }
 
-        function disconnectDevice() {
-          console.log("Disconnect Device.");
-          if (bleServer && bleServer.connected) {
-            if (sensorCharacteristicFound) {
-              sensorCharacteristicFound
-                .stopNotifications()
+          function disconnectDevice() {
+            console.log("Disconnect Device.");
+            if (bleServer && bleServer.connected) {
+              if (sensorCharacteristicFound) {
+                sensorCharacteristicFound
+                  .stopNotifications()
+                  .then(() => {
+                    console.log("Notifications Stopped");
+                    return bleServer.disconnect();
+                  })
+                  .then(() => {
+                    console.log("Device Disconnected");
+                    bleStateContainer.innerHTML = "Device Disconnected";
+                    bleStateContainer.style.color = "#d13a30";
+                  })
+                  .catch((error) => {
+                    console.log("An error occurred:", error);
+                  });
+              } else {
+                console.log("No characteristic found to disconnect.");
+              }
+            } else {
+              // Throw an error if Bluetooth is not connected
+              console.error("Bluetooth is not connected.");
+              window.alert("Bluetooth is not connected.");
+            }
+          }
+
+          function handleWiFiStatusChange(event) {
+            const status = new TextDecoder().decode(event.target.value);
+            wifiStatus.innerHTML = status;
+            console.log("WiFi Status: ", status);
+          }
+
+          function saveSettings() {
+            const uploadPeriod = document.getElementById("uploadPeriod").value || 0;
+            const wifiUploadPeriod = document.getElementById("wifiUploadPeriod").value || 0;
+            const sensorRecordingPeriod = document.getElementById("sensorRecordingPeriod").value || 0;
+            const sdRecording = document.getElementById("sdRecording").checked ? 1 : 0;
+
+            // Save settings to BLE device
+            if (settingsCharacteristicFound) {
+              $("#settingsModal").modal("hide");
+              const data = new TextEncoder().encode(
+                `${uploadPeriod},${wifiUploadPeriod},${sensorRecordingPeriod},${sdRecording}`
+              );
+              settingsCharacteristicFound
+                .writeValue(data)
                 .then(() => {
-                  console.log("Notifications Stopped");
-                  return bleServer.disconnect();
-                })
-                .then(() => {
-                  console.log("Device Disconnected");
-                  bleStateContainer.innerHTML = "Device Disconnected";
-                  bleStateContainer.style.color = "#d13a30";
+                  console.log("Settings saved tof BLE device");
                 })
                 .catch((error) => {
-                  console.log("An error occurred:", error);
+                  console.error("Error saving settings to BLE device: ", error);
                 });
-            } else {
-              console.log("No characteristic found to disconnect.");
             }
-          } else {
-            // Throw an error if Bluetooth is not connected
-            console.error("Bluetooth is not connected.");
-            window.alert("Bluetooth is not connected.");
           }
-        }
 
-        function handleWiFiStatusChange(event) {
-          const status = new TextDecoder().decode(event.target.value);
-          wifiStatus.innerHTML = status;
-          console.log("WiFi Status: ", status);
-        }
+          function handleSettingsChange(event) {
+            const settings = new TextDecoder().decode(event.target.value);
+            const [
+              uploadPeriod,
+              wifiUploadPeriod,
+              sensorRecordingPeriod,
+              sdRecording,
+            ] = settings.split(",").map(Number);
 
-        function saveSettings() {
-          const ssid = ssidInput.value;
-          const password = passwordInput.value;
-          const uploadFrequency = uploadFrequencyInput.value;
-
-          console.log(
-            "Settings saved: SSID:",
-            ssid,
-            "Password:",
-            password,
-            "Upload Frequency:",
-            uploadFrequency
-          );
-
-          if (bleServer && bleServer.connected) {
-            bleServiceFound
-              .getCharacteristic(wifiCharacteristic)
-              .then((characteristic) => {
-                console.log(
-                  "Found the WIFI characteristic: ",
-                  characteristic.uuid
-                );
-                const ssid = ssidInput.value;
-                const password = passwordInput.value;
-                let encoder = new TextEncoder();
-                let value = encoder.encode(`${ssid},${password}`);
-                console.log("Data to be written: ", value);
-                console.log("SSID: ", ssid);
-                console.log("Password ", password);
-
-                return characteristic.writeValue(value);
-              })
-              .then(() => {
-                console.log(
-                  "Value written to the WIFI characteristic: ",
-                  value
-                );
-              })
-              .catch((error) => {
-                console.error(
-                  "Error writing to the WIFI characteristic: ",
-                  error
-                );
-              });
-          } else {
-            console.error(
-              "Bluetooth is not connected. Cannot write to characteristic."
-            );
-            window.alert(
-              "Bluetooth is not connected. Cannot write to characteristic. \n Connect to BLE first!"
-            );
+            document.getElementById("uploadPeriod").value = uploadPeriod;
+            document.getElementById("wifiUploadPeriod").value = wifiUploadPeriod;
+            document.getElementById("sensorRecordingPeriod").value =
+              sensorRecordingPeriod;
+            document.getElementById("sdRecording").checked = sdRecording;
           }
-        }
 
-        function reconnectWiFi() {
-          if (wifiCharacteristicFound) {
-            const ssid = ssidInput.value;
-            const password = passwordInput.value;
-            const data = new TextEncoder().encode(`${ssid},${password}`);
-            wifiCharacteristicFound
-              .writeValue(data)
-              .then(() => {
-                console.log("WiFi Reconnect command sent");
-              })
-              .catch((error) => {
-                console.error("Error sending WiFi Reconnect command: ", error);
-              });
+          function reconnectWiFi() {
+            if (wifiCharacteristicFound) {
+              $("#wifiModal").modal("hide");
+
+              const ssid = ssidInput.value;
+              const password = passwordInput.value;
+              const data = new TextEncoder().encode(`${ssid},${password}`);
+              wifiCharacteristicFound
+                .writeValue(data)
+                .then(() => {
+                  console.log("WiFi Reconnect command sent");
+                })
+                .catch((error) => {
+                  console.error(
+                    "Error sending WiFi Reconnect command: ",
+                    error
+                  );
+                });
+            }
           }
-        }
 
-        function downloadCSV() {
-          const storedData =
-            JSON.parse(localStorage.getItem("sensorData")) || [];
-          const csvContent =
-            "data:text/csv;charset=utf-8," +
-            "Temp Sensor 1,Temp Sensor 2,Light Percentage,Soil Moisture 1,Soil Moisture 2,Humidity,Timestamp\n" +
-            storedData
-              .map(
-                (data) =>
-                  `${data.temp1},${data.temp2},${data.light},${data.soilMoisture1},${data.soilMoisture2},${data.humidity},${data.timestamp}`
-              )
-              .join("\n");
+          function downloadCSV() {
+            const storedData =
+              JSON.parse(localStorage.getItem("sensorData")) || [];
+            const csvContent =
+              "data:text/csv;charset=utf-8," +
+              "Temp Sensor 1,Temp Sensor 2,Light Percentage,Soil Moisture 1,Soil Moisture 2,Humidity,Timestamp\n" +
+              storedData
+                .map(
+                  (data) =>
+                    `${data.temp1},${data.temp2},${data.light},${data.soilMoisture1},${data.soilMoisture2},${data.humidity},${data.timestamp}`
+                )
+                .join("\n");
 
-          const encodedUri = encodeURI(csvContent);
-          const link = document.createElement("a");
-          link.setAttribute("href", encodedUri);
-          link.setAttribute("download", "sensor_data.csv");
-          document.body.appendChild(link);
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "sensor_data.csv");
+            document.body.appendChild(link);
 
-          link.click();
-        }
+            link.click();
+          }
 
-        updateChart();
-      });
-    </script>
-  </body>
+          updateChart();
+        });
+      </script>
+    </body>
+  </html>
 </html>

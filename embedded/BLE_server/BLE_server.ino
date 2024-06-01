@@ -15,6 +15,7 @@
 BLEServer* pServer = NULL;
 BLECharacteristic* pSensorCharacteristic = NULL;
 BLECharacteristic* pWifiCharacteristic = NULL;
+BLECharacteristic* pSettingsCharacteristic = NULL;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
@@ -26,9 +27,15 @@ DHT dht(DHT22_PIN, DHTTYPE);
 String wifiSSID = "";
 String wifiPASS = "ECE358PROBLEM";
 
-uint32_t SensorUpdate = 0;
-uint8_t sensorUpdateInterval = 5 * 1000;
+uint32_t lastSensorUpdate = 0;
+uint32_t lastWifiUpload = 0;
+uint32_t lastBluetoothUpdate = 0;
+
+uint16_t bluetoothUpdatePeriod = 3 * 1000;
+uint16_t sensorUpdatePeriod = 5 * 1000;
+uint16_t wifiUploadPeriod = 3 * 1000;
 bool saveToSD = false;
+
 
 SDmemory sdmemory;
 
@@ -37,6 +44,7 @@ SensorData currentData;
 #define SERVICE_UUID "19b10000-e8f2-537e-4f6c-d104768a1214"
 #define SENSOR_CHARACTERISTIC_UUID "19b10001-e8f2-537e-4f6c-d104768a1214"
 #define WIFI_CHARACTERISTIC_UUID "19b10002-e8f2-537e-4f6c-d104768a1214"
+#define SETTINGS_CHARACTERISTIC_UUID "19b10003-e8f2-537e-4f6c-d104768a1214"
 
 
 class MyServerCallbacks : public BLEServerCallbacks {
@@ -50,32 +58,56 @@ class MyServerCallbacks : public BLEServerCallbacks {
 };
 
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
-  void onWrite(BLECharacteristic* pWifiCharacteristic) {
-    String value = pWifiCharacteristic->getValue();
+  void onWrite(BLECharacteristic* pCharacteristic) {
+    std::string value = pCharacteristic->getValue();
     if (value.length() > 0) {
-
       #ifdef DEBUG
       Serial.print("Received data from client: ");
       Serial.println(value.c_str());  // Print the written value
       #endif
 
-      // Update wifiSSID and wifiPASS variables
-      String writtenValue = value.c_str();
-      int separatorIndex = writtenValue.indexOf(',');
-      if (separatorIndex != -1) {
-        wifiSSID = writtenValue.substring(0, separatorIndex);
-        wifiPASS = writtenValue.substring(separatorIndex + 1);
+      // Handle WiFi settings
+      if (pCharacteristic == pWifiCharacteristic) {
+        String writtenValue = value.c_str();
+        int separatorIndex = writtenValue.indexOf(',');
+        if (separatorIndex != -1) {
+          wifiSSID = writtenValue.substring(0, separatorIndex);
+          wifiPASS = writtenValue.substring(separatorIndex + 1);
+        }
+
+        #ifdef DEBUG
+        Serial.print("Updated wifiSSID: ");
+        Serial.println(wifiSSID);
+        Serial.print("Updated wifiPASS: ");
+        Serial.println(wifiPASS);
+        #endif
+
+        WiFi.begin(wifiSSID, wifiPASS);
       }
 
-      // Print the updated wifiSSID and wifiPASS
-      #ifdef DEBUG
-      Serial.print("Updated wifiSSID: ");
-      Serial.println(wifiSSID);
-      Serial.print("Updated wifiPASS: ");
-      Serial.println(wifiPASS);
-      #endif
+      // Handle Settings
+      if (pCharacteristic == pSettingsCharacteristic) {
+        String writtenValue = value.c_str();
+        int separatorIndex1 = writtenValue.indexOf(',');
+        int separatorIndex2 = writtenValue.indexOf(',', separatorIndex1 + 1);
+        int separatorIndex3 = writtenValue.indexOf(',', separatorIndex2 + 1);
+        if (separatorIndex1 != -1 && separatorIndex2 != -1 && separatorIndex3 != -1) {
+          bluetoothUpdatePeriod = writtenValue.substring(0, separatorIndex1).toInt();
+          wifiUploadPeriod = writtenValue.substring(separatorIndex1 + 1, separatorIndex2).toInt();
+          sensorUpdatePeriod = writtenValue.substring(separatorIndex2 + 1, separatorIndex3).toInt();
+          saveToSD = writtenValue.substring(separatorIndex3 + 1).toInt();
 
-      WiFi.begin(wifiSSID, wifiPASS);
+          #ifdef DEBUG
+          Serial.print("Updated bluetoothUpdatePeriod: ");
+          Serial.println(bluetoothUpdatePeriod);
+          Serial.print("Updated wifiUploadPeriod: ");
+          Serial.println(wifiUploadPeriod);
+          Serial.print("Updated sensorRecordingPeriod: ");
+          Serial.println(sensorUpdatePeriod);
+          Serial.print("Updated saveToSD: ");
+          #endif
+        }
+      }
     }
   }
 };
@@ -101,20 +133,24 @@ void setup() {
   // Create the BLE Service
   BLEService* pService = pServer->createService(SERVICE_UUID);
 
-  // Create a BLE Characteristic
   pSensorCharacteristic = pService->createCharacteristic(
     SENSOR_CHARACTERISTIC_UUID,
     BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_INDICATE);
-  // Create the WIFI Characteristic
+
   pWifiCharacteristic = pService->createCharacteristic(
     WIFI_CHARACTERISTIC_UUID,
     BLECharacteristic::PROPERTY_WRITE);
-  // Register the callback for the WIFI characteristic
   pWifiCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
+
+  pSettingsCharacteristic = pService->createCharacteristic(
+    SETTINGS_CHARACTERISTIC_UUID,
+    BLECharacteristic::PROPERTY_WRITE);
+  pSettingsCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
 
   // Create a BLE Descriptor
   pSensorCharacteristic->addDescriptor(new BLE2902());
   pWifiCharacteristic->addDescriptor(new BLE2902());
+  pSettingsCharacteristic->addDescriptor(new BLE2902());
 
   // Start the service
   pService->start();
@@ -145,7 +181,7 @@ void setup() {
 
 void loop() {
   // notify changed value
-  if (deviceConnected) {
+  if (deviceConnected && (millis() - lastBluetoothUpdate) >= bluetoothUpdatePeriod) {
     // Create the data string
     String sensorData = String(round(currentData.temperature1 * 10) / 10) + ","
        + String(round(currentData.temperature2 * 10) / 10) + ","
@@ -164,7 +200,7 @@ void loop() {
     Serial.println(sensorData);
     #endif
 
-    delay(3000);  // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test I was able to go as low as 3ms
+    lastBluetoothUpdate = millis();
   }
 
   // disconnecting
@@ -189,7 +225,7 @@ void loop() {
     #endif
   }
 
-  if ((millis() - currentData.timestamp) >= sensorUpdateInterval) {
+  if ((millis() - currentData.timestamp) >= sensorUpdatePeriod) {
     sensors.requestTemperatures();
     float s1 = sensors.getTempCByIndex(0);
     float maxVal = 4095.0;
@@ -212,7 +248,6 @@ void loop() {
   
     currentData.temperature2 = isnan(s2) ? -1 : s2;
     currentData.humidity = isnan(h1) ? -1 : h1;
-
 
     #ifdef DEBUG
     Serial.printf("time: %d T1 = %.2f, T2 = %.2f, L = %.2f, S1 = %.2f, S2 = %.2f, H = %.2f\n",
