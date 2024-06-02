@@ -293,6 +293,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
       <script>
+        var LOCALSTORAGE_KEY = "sensorData 2";
         document.addEventListener("DOMContentLoaded", function () {
           const ctx = document.getElementById("myChart").getContext("2d");
           const myChart = new Chart(ctx, {
@@ -394,7 +395,7 @@
 
           function updateChart() {
             let storedData =
-              JSON.parse(localStorage.getItem("sensorData")) || [];
+              JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY)) || [];
 
             if (chartFilter === "dataPoints") {
               storedData = storedData.slice(-chartCutoffValue);
@@ -465,7 +466,7 @@
           var chartCutoffValue = 0;
 
           // Define BLE Device Specs
-          var deviceName = "PlantGuru";
+          var deviceName = "PlantGuru 2";
           var bleService = "19b10000-e8f2-537e-4f6c-d104768a1214";
           var sensorCharacteristic = "19b10001-e8f2-537e-4f6c-d104768a1214";
           var wifiCharacteristic = "19b10002-e8f2-537e-4f6c-d104768a1214";
@@ -503,7 +504,7 @@
           });
 
           confirmClearDataButton.addEventListener("click", function () {
-            localStorage.removeItem("sensorData");
+            localStorage.removeItem(LOCALSTORAGE_KEY);
             updateChart();
             $("#clearDataModal").modal("hide");
           });
@@ -667,8 +668,8 @@
             if (soil2 === -1) soil2 = null;
             if (humidity === -1) humidity = null;
 
-            tempSensor1.innerHTML = temp1 ? temp1.toFixed(1) + " C" : "N/A";
-            tempSensor2.innerHTML = temp2 ? temp2.toFixed(1) + " C" : "N/A";
+            tempSensor1.innerHTML = temp1 ? temp1.toFixed(1) + " °C" : "N/A";
+            tempSensor2.innerHTML = temp2 ? temp2.toFixed(1) + " °C" : "N/A";
             lightPercent.innerHTML =
               light !== null ? light.toFixed(1) + " %" : "N/A";
             soilMoisture1.innerHTML =
@@ -692,9 +693,9 @@
             console.log("New data:", newData);
 
             const storedData =
-              JSON.parse(localStorage.getItem("sensorData")) || [];
+              JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY)) || [];
             storedData.push(newData);
-            localStorage.setItem("sensorData", JSON.stringify(storedData));
+            localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(storedData));
 
             console.log("Stored data:", storedData);
 
@@ -802,7 +803,7 @@
 
           function downloadCSV() {
             const storedData =
-              JSON.parse(localStorage.getItem("sensorData")) || [];
+              JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY)) || [];
             const csvContent =
               "data:text/csv;charset=utf-8," +
               "Temp Sensor 1,Temp Sensor 2,Light Percentage,Soil Moisture 1,Soil Moisture 2,Humidity,Timestamp\n" +
