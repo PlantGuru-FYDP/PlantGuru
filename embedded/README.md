@@ -21,6 +21,10 @@ collect data from soil moisture, soil temp, air temp, and light, and the interfa
 ## Setup
 1. Install the ESP32 board in the Arduino IDE according to the [DFRobot guide](https://wiki.dfrobot.com/FireBeetle_Board_ESP32_E_SKU_DFR0654)
 2. Open BLE_server.ino sketch in the Arduino IDE
-3. Install the DallasTemperature library in he Arduino IDE
-4. Install the DHT22 library in the Arduino IDE
-5. Open index.html in a web browser to connect to the server
+3. Install **DallasTemperature** by **Miles Burton** and dependencies in the Arduino IDE
+4. Install **DHT22 sensor library** by **Adafruit** and dependencies in the Arduino IDE
+5. Install **ArduoinoJson** by **Benoit Blanchon** in the Arduino IDE
+6. Set **Tools > Partition Scheme** to **Huge APP (3MB No OTA/1MB SPIFFS)**
+7. Upload the sketch to the Firebeetle 2 ESP32-E
+8. Open **Tools > Serial Monitor** at 115200 baud to see the output of the sketch
+9. Open index.html in a web browser to connect to the server

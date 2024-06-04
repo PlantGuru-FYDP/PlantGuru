@@ -9,6 +9,8 @@
 #include "req.h"
 #include "DHT.h"
 #include "constants.h"
+#include "wifi.h"
+
 
 #define DEBUG
 
@@ -26,6 +28,9 @@ DHT dht(DHT22_PIN, DHTTYPE);
 
 String wifiSSID = "";
 String wifiPASS = "ECE358PROBLEM";
+String wifiPOSTUrl = "none";
+
+bool sendWifiData = false;
 
 uint32_t lastSensorUpdate = 0;
 uint32_t lastWifiUpload = 0;
@@ -124,7 +129,7 @@ void setup() {
   dht.begin();
 
   // Create the BLE Device
-  BLEDevice::init("PlantGuru");
+  BLEDevice::init("PlantGuru 2");
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
@@ -179,28 +184,81 @@ void setup() {
   Serial.println(WiFi.status());
 }
 
+// Update Methods
+void bluetoothUpdate() {
+  // Create the data string
+  String sensorData = String(round(currentData.temperature1 * 10) / 10) + ","
+      + String(round(currentData.temperature2 * 10) / 10) + ","
+      + String(round(currentData.light * 10) / 10) + "," 
+      + String(round(currentData.soilMoisture1 * 10) / 10) + ","
+      + String(round(currentData.soilMoisture2 * 10) / 10) + ","
+      + String(round(currentData.humidity * 10) / 10) + ","
+      + String(WiFi.status());
+
+  // Update the characteristic value and notify
+  pSensorCharacteristic->setValue(sensorData.c_str());
+  pSensorCharacteristic->notify();
+
+  #ifdef DEBUG
+  Serial.print("Sent sensor data values: ");
+  Serial.println(sensorData);
+  #endif
+}
+
+void sensorUpdate() {
+  // Temperature 1
+  sensors.requestTemperatures();
+  float s1 = sensors.getTempCByIndex(0);
+  currentData.temperature1 = s1 < 0 ? -1: s1;
+
+  // Soil Moisture
+  currentData.soilMoisture1 = (1-analogRead(soilPin1)/ANALOG_MAX) * 100;
+  currentData.soilMoisture2 = (1-analogRead(soilPin2)/ANALOG_MAX) * 100;
+
+  // Light
+  currentData.light = (analogRead(lightPin)/ANALOG_MAX) *100;
+
+  // Temperature 2 & Humidity
+  float s2 = dht.readTemperature();
+  currentData.temperature2 = isnan(s2) ? -1 : s2;
+  
+  float h1 = dht.readHumidity();
+  currentData.humidity = isnan(h1) ? -1 : h1;
+
+  // Time
+  currentData.timestamp = millis();
+
+  #ifdef DEBUG
+  Serial.printf("time: %d T1 = %.2f, T2 = %.2f, L = %.2f, S1 = %.2f, S2 = %.2f, H = %.2f\n",
+    currentData.timestamp, currentData.temperature1, currentData.temperature2, currentData.light, currentData.soilMoisture1, currentData.soilMoisture2, currentData.humidity);
+  #endif
+
+  if (saveToSD && sdmemory.isSetup() && sdmemory.getRemainingRecords() > 0){
+    if (!sdmemory.writeData(currentData)) {
+      Serial.println("Failed to write data to SD memory");
+    }
+  }
+}
+
 void loop() {
-  // notify changed value
+  // Bluetooth
   if (deviceConnected && (millis() - lastBluetoothUpdate) >= bluetoothUpdatePeriod) {
-    // Create the data string
-    String sensorData = String(round(currentData.temperature1 * 10) / 10) + ","
-       + String(round(currentData.temperature2 * 10) / 10) + ","
-       + String(round(currentData.light * 10) / 10) + "," 
-       + String(round(currentData.soilMoisture1 * 10) / 10) + ","
-       + String(round(currentData.soilMoisture2 * 10) / 10) + ","
-       + String(round(currentData.humidity * 10) / 10) + ","
-       + String(WiFi.status());
-
-    // Update the characteristic value and notify
-    pSensorCharacteristic->setValue(sensorData.c_str());
-    pSensorCharacteristic->notify();
-
-    #ifdef DEBUG
-    Serial.print("Sent sensor data values: ");
-    Serial.println(sensorData);
-    #endif
-
+    bluetoothUpdate();
     lastBluetoothUpdate = millis();
+  }
+
+  // Sensors
+  if ((millis() - lastSensorUpdate) >= sensorUpdatePeriod) {
+    sensorUpdate();
+    lastSensorUpdate = millis();
+  }
+
+  // Wifi
+  if ((millis() - lastWifiUpload) >= wifiUploadPeriod) {
+    lastWifiUpload = millis();
+    if (sendWifiData) {
+      postSensorData(wifiPOSTUrl, currentData, 3);
+    }
   }
 
   // disconnecting
@@ -208,56 +266,24 @@ void loop() {
     #ifdef DEBUG
     Serial.println("Device disconnected.");
     #endif
+
     delay(500);                   // give the bluetooth stack the chance to get things ready
     pServer->startAdvertising();  // restart advertising
+
     #ifdef DEBUG
     Serial.println("Start advertising");
     #endif
+
     oldDeviceConnected = deviceConnected;
   }
 
   // connecting
   if (deviceConnected && !oldDeviceConnected) {
-    // do stuff here on connecting
     oldDeviceConnected = deviceConnected;
+
     #ifdef DEBUG
     Serial.println("Device Connected");
     #endif
   }
 
-  if ((millis() - currentData.timestamp) >= sensorUpdatePeriod) {
-    sensors.requestTemperatures();
-    float s1 = sensors.getTempCByIndex(0);
-    float maxVal = 4095.0;
-    currentData.temperature1 = s1 < 0 ? -1: s1;
-    currentData.light = (analogRead(lightPin)/maxVal) *100;
-    //Moisture sensor 1
-    //max line reads 4095
-    //min recommended line reads 3562
-    //in air reads
-    currentData.soilMoisture1 = (1- analogRead(soilPin1)/maxVal) * 100;
-    //Moisture sensor 2
-    //Max line reads 4095
-    //min recommended reads 3562
-    //in air reads
-    currentData.soilMoisture2 = (1-analogRead(soilPin2)/maxVal) *100;
-    currentData.timestamp = millis();
-
-    float s2 = dht.readTemperature();
-    float h1 = dht.readHumidity();
-  
-    currentData.temperature2 = isnan(s2) ? -1 : s2;
-    currentData.humidity = isnan(h1) ? -1 : h1;
-
-    #ifdef DEBUG
-    Serial.printf("time: %d T1 = %.2f, T2 = %.2f, L = %.2f, S1 = %.2f, S2 = %.2f, H = %.2f\n",
-      currentData.timestamp, currentData.temperature1, currentData.temperature2, currentData.light, currentData.soilMoisture1, currentData.soilMoisture2, currentData.humidity);
-    #endif
-
-    if (saveToSD && sdmemory.isSetup() && sdmemory.getRemainingRecords() > 0){
-      if (!sdmemory.writeData(currentData)) {
-        Serial.println("Failed to write data to SD memory");
-      }
-    }
-  }
 }

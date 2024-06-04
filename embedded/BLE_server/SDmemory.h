@@ -67,18 +67,6 @@ bool writeFile(fs::FS &fs, const char * path, const char * message){
 }
 
 
-class SensorData {
-  public:
-    float soilMoisture1 = -1.0;
-    float soilMoisture2 = -1.0;
-    float temperature1 = -1.0;
-    float temperature2 = -1.0;
-    float temperature3 = -1.0;
-    float humidity = -1.0;
-    float light = -1.0;
-    int timestamp = -1;
-};
-
 class SDmemory {
   private:
     const char* filename = "/data.csv"; // File name to store sensor data
