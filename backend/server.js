@@ -25,9 +25,9 @@ app.use((error, req, res, next) => {
 });
 
 //ALL APIS
-const ALL_ROUTES = require("./api/utilites/all_routes");
-app.use(ALL_ROUTES.auth);
-app.use(ALL_ROUTES.userInfo);
+// const ALL_ROUTES = require("./api/utilites/all_routes");
+// app.use(ALL_ROUTES.auth);
+// app.use(ALL_ROUTES.userInfo);
 
 //Listening to the port
-app.listen(3000, () => console.log("Connected to port 3000"));
+app.listen(3000, () => console.log("Connected to port test 3000"));
