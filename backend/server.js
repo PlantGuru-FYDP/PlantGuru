@@ -17,7 +17,7 @@ app.use(
 );
 
 app.get("/test", (req, res) => {
-  res.send("hello world");
+  res.send("Should change automatically now");
 });
 
 //handling invalid api
