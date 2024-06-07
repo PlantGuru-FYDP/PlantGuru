@@ -16,6 +16,10 @@ app.use(
   })
 );
 
+app.get("/", (req, res) => {
+  res.send("hello world");
+});
+
 //handling invalid api
 app.use((error, req, res, next) => {
   //console.log(error);
