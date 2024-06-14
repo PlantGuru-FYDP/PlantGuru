@@ -1,6 +1,7 @@
 package com.example.plantguru
 
 import android.Manifest
+import android.app.AlertDialog
 import android.bluetooth.*
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
@@ -8,61 +9,81 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.os.Build
+import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
+import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.TextView
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ListView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.espressif.provisioning.ESPProvisionManager
+import com.example.plantguru.activities.EspMainActivity
+import com.example.plantguru.BuildConfig
+import android.provider.Settings
+import android.os.Build
+import com.espressif.provisioning.ESPConstants
+import com.example.plantguru.activities.BLEProvisionLanding
+import com.example.plantguru.constants.AppConstants
+import com.example.plantguru.models.Plant
+
+//import com.example.plantguru.activities.PlantDetailActivity
+import com.example.plantguru.utils.SharedPreferencesHelper
+
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothManager
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private var bluetoothGatt: BluetoothGatt? = null
 
-    private lateinit var sensorDataTextView: TextView
-    private lateinit var bluetoothStateTextView: TextView
-    private lateinit var connectButton: Button
-
-    private lateinit var temp1TextView: TextView
-    private lateinit var temp2TextView: TextView
-    private lateinit var lightTextView: TextView
-    private lateinit var soilMoisture1TextView: TextView
-    private lateinit var soilMoisture2TextView: TextView
-    private lateinit var humidityTextView: TextView
-    private lateinit var wifiStatusTextView: TextView
+    private lateinit var plants: List<Plant>
+    private lateinit var plantsAdapter: ArrayAdapter<String>
 
     private lateinit var enableBluetoothLauncher: ActivityResultLauncher<Intent>
     private lateinit var requestPermissionsLauncher: ActivityResultLauncher<Array<String>>
 
+    private lateinit var provisionManager: ESPProvisionManager
+    private lateinit var sharedPreferences: SharedPreferences
+
+    private val REQUEST_LOCATION = 1
+    private val REQUEST_ENABLE_BT = 2
+
+    private val detectedDevices = mutableListOf<String>()
+
     companion object {
         const val TAG = "MainActivity"
-        const val SERVICE_UUID = "19b10000-e8f2-537e-4f6c-d104768a1214"
-        const val SENSOR_CHARACTERISTIC_UUID = "19b10001-e8f2-537e-4f6c-d104768a1214"
-        const val DEVICE_NAME = "PlantGuru 2"
+        const val DEVICE_NAME = "guru32"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        //SharedPreferencesHelper.clearAllPlants(this)
+        bluetoothAdapter = (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
 
-        bluetoothStateTextView = findViewById(R.id.bluetoothStateTextView)
-        connectButton = findViewById(R.id.connectButton)
+        val plantsList: ListView = findViewById(R.id.plantsList)
+        val connectButton: Button = findViewById(R.id.connectButton)
+        val scanButton: Button = findViewById(R.id.scanButton)
+        val provisionButton: Button = findViewById(R.id.provisionButton)
 
-        temp1TextView = findViewById(R.id.temp1TextView)
-        temp2TextView = findViewById(R.id.temp2TextView)
-        lightTextView = findViewById(R.id.lightTextView)
-        soilMoisture1TextView = findViewById(R.id.soilMoisture1TextView)
-        soilMoisture2TextView = findViewById(R.id.soilMoisture2TextView)
-        humidityTextView = findViewById(R.id.humidityTextView)
-        wifiStatusTextView = findViewById(R.id.wifiStatusTextView)
+        plants = SharedPreferencesHelper.getPlants(this).toMutableList()
+        Log.d(TAG, "num of plants: "+ plants.size.toString())
+        plantsAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, mutableListOf<String>())
+        plantsList.adapter = plantsAdapter
+        updatePlantList()
+
+        sharedPreferences = getSharedPreferences(AppConstants.ESP_PREFERENCES, Context.MODE_PRIVATE)
+        provisionManager = ESPProvisionManager.getInstance(applicationContext)
 
         enableBluetoothLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
@@ -74,27 +95,83 @@ class MainActivity : AppCompatActivity() {
 
         requestPermissionsLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             if (permissions.all { it.value }) {
-                initBluetooth()
+                initializeBluetooth()
             } else {
                 Toast.makeText(this, "Permissions required to use Bluetooth", Toast.LENGTH_LONG).show()
             }
         }
 
-        connectButton.setOnClickListener {
+        scanButton.setOnClickListener {
             if (checkPermissions()) {
                 startScanning()
             }
         }
 
-        if (checkPermissions()) {
-            initBluetooth()
+        connectButton.setOnClickListener {
+            //val intent = Intent(this, ConnectActivity::class.java)
+            //startActivity(intent)
+            SharedPreferencesHelper.clearAllPlants(this)
         }
+
+
+        provisionButton.setOnClickListener{
+            if (!isLocationEnabled()) {
+                askForLocation()
+                return@setOnClickListener
+            }
+            provisionManager.createESPDevice(ESPConstants.TransportType.TRANSPORT_BLE, ESPConstants.SecurityType.SECURITY_0)
+            val intent = Intent(this@MainActivity, BLEProvisionLanding::class.java)
+            intent.putExtra(AppConstants.KEY_SECURITY_TYPE, AppConstants.SEC_TYPE_1);
+            startActivity(intent)
+        }
+
+        if (checkPermissions()) {
+            initializeBluetooth()
+        }
+    }
+
+    private fun askForLocation() {
+        val builder = AlertDialog.Builder(this)
+        builder.setCancelable(true)
+        builder.setMessage(R.string.dialog_msg_gps)
+
+        // Set up the buttons
+        builder.setPositiveButton(R.string.btn_ok) { dialog, which ->
+            startActivityForResult(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS), REQUEST_LOCATION)
+        }
+
+        builder.setNegativeButton(R.string.btn_cancel) { dialog, which ->
+            dialog.cancel()
+        }
+
+        builder.show()
+    }
+
+    private fun isLocationEnabled(): Boolean {
+        val lm = applicationContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val gpsEnabled = try {
+            lm.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        } catch (ex: Exception) {
+            false
+        }
+
+        val networkEnabled = try {
+            lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        } catch (ex: Exception) {
+            false
+        }
+
+        Log.d(TAG, "GPS Enabled : $gpsEnabled , Network Enabled : $networkEnabled")
+
+        return gpsEnabled || networkEnabled
     }
 
     private fun checkPermissions(): Boolean {
         val permissionsNeeded = listOf(
             Manifest.permission.BLUETOOTH,
             Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT,
             Manifest.permission.ACCESS_FINE_LOCATION
         )
 
@@ -110,10 +187,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initBluetooth() {
-        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothAdapter = bluetoothManager.adapter
+    override fun onResume() {
+        super.onResume()
+        plants = SharedPreferencesHelper.getPlants(this).toMutableList()
+        updatePlantList()
+    }
 
+    private fun initializeBluetooth() {
         if (!bluetoothAdapter.isEnabled) {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             enableBluetoothLauncher.launch(enableBtIntent)
@@ -139,16 +219,17 @@ class MainActivity : AppCompatActivity() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
             result?.device?.let {
-                bluetoothAdapter.bluetoothLeScanner.stopScan(this)
-                updateBluetoothState("Device found: ${it.name}")
-                connectToDevice(it)
+                updateBluetoothState("Device found: ${it.name ?: it.address}")
+                detectedDevices.add(it.address)
+                updatePlantList()
             }
         }
 
         override fun onBatchScanResults(results: MutableList<ScanResult>?) {
             super.onBatchScanResults(results)
             results?.forEach {
-                Log.d(TAG, "Batch scan result: ${it.device.name} - ${it.device.address}")
+                detectedDevices.add(it.device.address)
+                updatePlantList()
             }
         }
 
@@ -159,101 +240,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun connectToDevice(device: BluetoothDevice) {
-        updateBluetoothState("Connecting to device...")
-        bluetoothGatt = device.connectGatt(this, false, gattCallback)
-    }
-
-    private val gattCallback = object : BluetoothGattCallback() {
-        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            if (newState == BluetoothGatt.STATE_CONNECTED) {
-                updateBluetoothState("Connected to device, discovering services...")
-                gatt.discoverServices()
-            } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
-                updateBluetoothState("Disconnected from device")
-                Log.d(TAG, "Disconnected from device")
-            } else {
-                Log.e(TAG, "Connection state change error: status=$status newState=$newState")
-            }
+    private fun updatePlantList() {
+        val plantNamesWithStatus = plants.map {
+            val status = if (detectedDevices.contains(it.deviceUUID)) "Detected" else "Not Detected"
+            "${it.deviceUUID} - $status"
         }
+        Log.d(TAG, plantNamesWithStatus.toString())
 
-        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                val service: BluetoothGattService? = gatt.getService(java.util.UUID.fromString(SERVICE_UUID))
-                val characteristic: BluetoothGattCharacteristic? = service?.getCharacteristic(java.util.UUID.fromString(SENSOR_CHARACTERISTIC_UUID))
-
-                if (characteristic != null) {
-                    gatt.setCharacteristicNotification(characteristic, true)
-                    val descriptor = characteristic.getDescriptor(java.util.UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"))
-                    if (descriptor != null) {
-                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                        gatt.writeDescriptor(descriptor)
-                        updateBluetoothState("Service discovered, notifications enabled")
-                    } else {
-                        updateBluetoothState("Descriptor not found")
-                        Log.e(TAG, "Descriptor not found")
-                    }
-                } else {
-                    updateBluetoothState("Service or characteristic not found")
-                    Log.e(TAG, "Service or characteristic not found")
-                }
-                gatt.requestMtu(517)
-            } else {
-                updateBluetoothState("Service discovery failed with status: $status")
-                Log.e(TAG, "Service discovery failed with status: $status")
-            }
-        }
-
-        @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-        override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray) {
-            if (characteristic.uuid.toString() == SENSOR_CHARACTERISTIC_UUID) {
-                val sensorData = value.toString(Charsets.UTF_8)
-                val sensorValues = sensorData.split(",")
-                runOnUiThread {
-                    temp1TextView.text = sensorValues[0]
-                    temp2TextView.text = sensorValues[1]
-                    lightTextView.text = sensorValues[2]
-                    soilMoisture1TextView.text = sensorValues[3]
-                    soilMoisture2TextView.text = sensorValues[4]
-                    humidityTextView.text = sensorValues[5]
-                    wifiStatusTextView.text = sensorValues[6]
-                }
-                Log.d(TAG, "Sensor data received: $sensorData")
-            }
-        }
-
-        @Suppress("DEPRECATION")
-        override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                val value = characteristic.value
-                val sensorData = value.toString(Charsets.UTF_8)
-                runOnUiThread {
-                    sensorDataTextView.text = sensorData
-                }
-                Log.d(TAG, "Sensor data received: $sensorData")
-            }
-        }
-
-        override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
-            Log.d(TAG, "Characteristic written: ${characteristic.uuid}, status: $status")
-        }
-
-        override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                Log.d(TAG, "Descriptor written: ${descriptor.uuid}")
-            } else {
-                Log.e(TAG, "Descriptor write failed with status: $status")
-            }
-        }
-
-        override fun onDescriptorRead(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
-            Log.d(TAG, "Descriptor read: ${descriptor.uuid}, status: $status")
-        }
+        plantsAdapter.clear()
+        plantsAdapter.addAll(plantNamesWithStatus)
+        plantsAdapter.notifyDataSetChanged()
+        Log.d(TAG, "updated plant list")
     }
 
     private fun updateBluetoothState(state: String) {
         runOnUiThread {
-            bluetoothStateTextView.text = state
+            Toast.makeText(this, state, Toast.LENGTH_SHORT).show()
         }
         Log.d(TAG, state)
     }
@@ -264,3 +266,4 @@ class MainActivity : AppCompatActivity() {
         bluetoothGatt = null
     }
 }
+

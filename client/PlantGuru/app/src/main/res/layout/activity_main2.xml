@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <Button
+        android:id="@+id/scanButton"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginRight="16dp"
+        android:text="Scan" />
+
+    <TextView
+        android:id="@+id/unlockedDevicesTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/scanButton"
+        android:text="Unlocked Devices"
+        android:textSize="18sp"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"/>
+
+    <ListView
+        android:id="@+id/unlockedDevicesList"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_below="@id/unlockedDevicesTitle"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"/>
+
+    <TextView
+        android:id="@+id/lockedDevicesTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Locked Devices"
+        android:textSize="18sp"
+        android:layout_below="@id/unlockedDevicesList"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"/>
+
+    <ListView
+        android:id="@+id/lockedDevicesList"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_below="@id/lockedDevicesTitle"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"/>
+
+    <Button
+        android:id="@+id/lockButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lock"
+        android:layout_below="@id/lockedDevicesList"
+        android:layout_marginTop="16dp"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="16dp"/>
+
+    <Button
+        android:id="@+id/unlockButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Unlock"
+        android:layout_below="@id/lockedDevicesList"
+        android:layout_marginTop="16dp"
+        android:layout_toStartOf="@id/lockButton"
+        android:layout_marginEnd="16dp"/>
+
+    <Button
+        android:id="@+id/disconnect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="disconnect"
+        android:layout_below="@id/lockedDevicesList"
+        android:layout_marginTop="16dp"
+        android:layout_toStartOf="@id/unlockButton"
+        android:layout_marginEnd="16dp"/>
+</RelativeLayout>
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ESP32 Provisioning"
+        android:textSize="24sp"
+        android:layout_gravity="center_horizontal"
+        android:paddingBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnStartScan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start BLE Scan"
+        android:layout_gravity="center_horizontal"/>
+
+    <TextView
+        android:id="@+id/tvLogs"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@android:color/darker_gray"
+        android:maxLines="10"
+        android:padding="8dp"
+        android:paddingTop="16dp"
+        android:scrollbars="vertical"
+        android:text="Logs will appear here..."
+        android:textColor="#4E342E" />
+
+</LinearLayout>
