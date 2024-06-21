@@ -1,4 +1,4 @@
-const conn = require("./db/connection");
+const conn = require("../../db/connection");
 
 exports.sensorUpload = (req, res) => {
   const {
