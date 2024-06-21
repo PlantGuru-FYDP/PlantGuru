@@ -1,5 +1,5 @@
 const ALL_ROUTES = {
-  auth: require("../routes/auth"),
+  // auth: require("../routes/auth"),
   dataUpload: require("../routes/dataUpload"),
 };
 
