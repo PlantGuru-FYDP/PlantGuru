@@ -1,1 +1,1 @@
-// TODO think about the routes you need for this
+// Return user information for the user in the app

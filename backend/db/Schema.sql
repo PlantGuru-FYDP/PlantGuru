@@ -28,11 +28,20 @@ CREATE TABLE Plants (
 CREATE TABLE SensorData (
     sensor_id INT AUTO_INCREMENT PRIMARY KEY,
     plant_id INT,
-    sun_light FLOAT,
     ext_temp FLOAT,
+    humidity FLOAT,
+    light FLOAT,
     soil_temp FLOAT,
-    soil_moisture_top FLOAT,
-    soil_moisture_bottom FLOAT,
-    time DATETIME NOT NULL,
+    soil_moisture_1 FLOAT,
+    soil_moisture_2 FLOAT,
+    time timestamp NOT NULL,
     FOREIGN KEY (plant_id) REFERENCES Plants(plant_id) ON DELETE CASCADE
 );
+
+-- Create the WateringEvent table
+-- CREATE TABLE WateringEvent (
+--     watering_id INT AUTO_INCREMENT PRIMARY KEY,
+--     plant_id INT,
+--     time DATETIME NOT NULL,
+--     FOREIGN KEY (plant_id) REFERENCES Plants(plant_id) ON DELETE CASCADE
+-- );
