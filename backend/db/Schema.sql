@@ -39,9 +39,13 @@ CREATE TABLE SensorData (
 );
 
 -- Create the WateringEvent table
--- CREATE TABLE WateringEvent (
---     watering_id INT AUTO_INCREMENT PRIMARY KEY,
---     plant_id INT,
---     time DATETIME NOT NULL,
---     FOREIGN KEY (plant_id) REFERENCES Plants(plant_id) ON DELETE CASCADE
--- );
+CREATE TABLE WateringEvent (
+    watering_id INT AUTO_INCREMENT PRIMARY KEY,
+    watering_duration INT,
+    peak_temp FLOAT,
+    peak_moisture FLOAT,
+    avg_temp FLOAT, 
+    avg_moisture FLOAT, 
+    plant_id INT,
+    FOREIGN KEY (plant_id) REFERENCES Plants(plant_id) ON DELETE CASCADE
+);
