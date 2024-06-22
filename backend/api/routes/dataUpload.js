@@ -31,3 +31,5 @@ router.post(
 //   ],
 //   plantUpload
 // );
+
+module.exports = router;
