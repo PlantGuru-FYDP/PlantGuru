@@ -9,10 +9,10 @@ exports.sensorUpload = (req, res) => {
     soil_temp,
     soil_moisture_1,
     soil_moisture_2,
-    time,
+    time_stamp,
   } = req.body;
   conn.query(
-    "INSERT INTO sensorData (plant_id, ext_temp, light, humidity,  soil_temp, soil_moisture_1, soil_moisture_2, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO SensorData (plant_id, ext_temp, light, humidity,  soil_temp, soil_moisture_1, soil_moisture_2, time_stamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     [
       plant_id,
       ext_temp,
@@ -21,7 +21,7 @@ exports.sensorUpload = (req, res) => {
       soil_temp,
       soil_moisture_1,
       soil_moisture_2,
-      time,
+      time_stamp,
     ],
     (err) => {
       if (err) {

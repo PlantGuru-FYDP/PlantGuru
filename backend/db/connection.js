@@ -7,13 +7,12 @@ var connection = mysql.createConnection({
   password: process.env.RDS_PASSWORD,
   port: process.env.RDS_PORT,
 });
-console.log(process.env.RDS_HOSTNAME);
 connection.connect(function (err) {
   if (err) {
     console.error("Database connection failed: " + err.stack);
     return;
   }
-
+  connection.query("USE PlantGuruDB;");
   console.log("Connected to database.");
 });
 

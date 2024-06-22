@@ -34,7 +34,7 @@ CREATE TABLE SensorData (
     soil_temp FLOAT,
     soil_moisture_1 FLOAT,
     soil_moisture_2 FLOAT,
-    time timestamp NOT NULL,
+    time_stamp timestamp NOT NULL,
     FOREIGN KEY (plant_id) REFERENCES Plants(plant_id) ON DELETE CASCADE
 );
 
