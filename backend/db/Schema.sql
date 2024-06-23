@@ -47,5 +47,7 @@ CREATE TABLE WateringEvent (
     avg_temp FLOAT, 
     avg_moisture FLOAT, 
     plant_id INT,
+    time_stamp timestamp NOT NULL,
+    volume FLOAT,
     FOREIGN KEY (plant_id) REFERENCES Plants(plant_id) ON DELETE CASCADE
 );

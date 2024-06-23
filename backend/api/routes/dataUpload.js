@@ -7,10 +7,12 @@ let {
   plantUpload,
 } = require("../controllers/dataUpload");
 
-const { body } = require("express-validator");
+// const { body } = require("express-validator");
 
 router.post("/sensorUpload", sensorUpload);
 
 router.post("/wateringEventUpload", wateringUpload);
+
+router.post("/plantUpload", plantUpload);
 
 module.exports = router;

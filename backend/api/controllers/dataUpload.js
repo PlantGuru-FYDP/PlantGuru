@@ -45,6 +45,8 @@ exports.wateringUpload = (req, res) => {
       avg_temp,
       avg_moisture,
       plant_id,
+      time_stamp,
+      volume,
     } = req.body[i];
 
     values.push([
@@ -54,16 +56,23 @@ exports.wateringUpload = (req, res) => {
       avg_temp,
       avg_moisture,
       plant_id,
+      time_stamp,
+      volume,
     ]);
   }
   const cmd =
-    "INSERT INTO WateringEvent (watering_duration, peak_temp, peak_moisture, avg_temp, avg_moisture, plant_id) VALUES ?";
+    "INSERT INTO WateringEvent (watering_duration, peak_temp, peak_moisture, avg_temp, avg_moisture, plant_id, time_stamp, volume) VALUES ?";
   uploadData(res, cmd, values);
 };
 
-// need to implement
-exports.PlantUpload = (req, res) => {
-  res.send("Not implemented yet");
+exports.plantUpload = (req, res) => {
+  const { user_id, plant_name, age, last_watered, next_watering_time } =
+    req.body;
+
+  const values = [user_id, plant_name, age, last_watered, next_watering_time];
+  const cmd =
+    "INSERT INTO Plants (user_id, plant_name, age, last_watered, next_watering_time) VALUES (?)";
+  uploadData(res, cmd, values);
 };
 
 // Helper function to upload data to the db
