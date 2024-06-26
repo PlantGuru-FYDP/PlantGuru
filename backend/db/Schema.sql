@@ -9,8 +9,7 @@ CREATE TABLE Users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     address TEXT,
-    phone_number VARCHAR(20),
-    number_of_plants INT DEFAULT 0
+    phone_number VARCHAR(20)
 );
 
 -- Create the Plants table

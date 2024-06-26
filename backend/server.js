@@ -4,7 +4,6 @@ let app = express();
 var bodyParser = require("body-parser");
 var cookieParser = require("cookie-parser");
 let cors = require("cors");
-
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.json());
@@ -32,8 +31,11 @@ app.use((error, req, res, next) => {
 
 //ALL APIS
 const ALL_ROUTES = require("./api/utilites/all_routes");
-app.use(ALL_ROUTES.dataUpload);
-// Expose other endpoints as they become available
+
+// TODO remove these routes to another file as they will grow
+app.use("/api", ALL_ROUTES.sensor);
+app.use("/api", ALL_ROUTES.watering);
+app.use("/api", ALL_ROUTES.plant);
 
 //Listening to the port
-app.listen(3000, () => console.log("Connected to port 3000"));
+app.listen(3000, () => console.log("Listening on port 3000"));

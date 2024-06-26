@@ -1,0 +1,47 @@
+const WateringEvent = require("../models/wateringEventModel");
+
+exports.wateringUpload = async (req, res) => {
+  try {
+    const values = [];
+    if (req.body.length) {
+      for (const data of req.body) {
+        const wateringEvent = new WateringEvent(data);
+        values.push(Object.values(wateringEvent));
+      }
+    } else {
+      const wateringEvent = new WateringEvent(req.body);
+      values.push(Object.values(wateringEvent));
+    }
+
+    WateringEvent.uploadData(values);
+    return res.status(200).send("Successfully uploaded watering event data");
+  } catch (err) {
+    return res.status(500).send(err.message);
+  }
+};
+
+exports.wateringRead = async (req, res) => {
+  try {
+    const plant_id = req.query.plant_id;
+    const time_stamp = req.query.time_stamp;
+    const [rows] = await WateringEvent.readData(plant_id, time_stamp);
+    return res.status(200).send({ result: rows });
+  } catch (err) {
+    return res.status(500).send(err.message);
+  }
+};
+exports.wateringReadSeries = async (req, res) => {
+  try {
+    const plant_id = req.query.plant_id;
+    const time_stamp1 = req.query.time_stamp1;
+    const time_stamp2 = req.query.time_stamp2;
+    const [rows] = await WateringEvent.readDataSeries(
+      plant_id,
+      time_stamp1,
+      time_stamp2
+    );
+    return res.status(200).send({ result: rows });
+  } catch (err) {
+    return res.status(500).send(err.message);
+  }
+};

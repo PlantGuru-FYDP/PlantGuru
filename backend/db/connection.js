@@ -1,19 +1,14 @@
-var mysql = require("mysql");
+const mysql = require("mysql2/promise");
 require("dotenv").config();
 
-var connection = mysql.createConnection({
+const connection = mysql.createPool({
   host: process.env.RDS_HOSTNAME,
   user: process.env.RDS_USERNAME,
   password: process.env.RDS_PASSWORD,
   port: process.env.RDS_PORT,
+  database: "PlantGuruDB",
 });
-connection.connect(function (err) {
-  if (err) {
-    console.error("Database connection failed: " + err.stack);
-    return;
-  }
-  connection.query("USE PlantGuruDB;");
-  console.log("Connected to database.");
-});
+
+console.log("Connected to the database");
 
 module.exports = connection;

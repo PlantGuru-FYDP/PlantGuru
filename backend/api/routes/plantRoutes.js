@@ -1,18 +1,12 @@
 // Routes relating to uploading data to the db
 let express = require("express");
+const { plantRead, plantUpload } = require("../controllers/plantController");
 let router = express.Router();
-let {
-  sensorUpload,
-  wateringUpload,
-  plantUpload,
-} = require("../controllers/dataUpload");
 
 // const { body } = require("express-validator");
 
-router.post("/sensorUpload", sensorUpload);
-
-router.post("/wateringEventUpload", wateringUpload);
-
 router.post("/plantUpload", plantUpload);
+
+router.get("/plantRead", plantRead);
 
 module.exports = router;
