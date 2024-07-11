@@ -1,45 +1,65 @@
-let { getData, uploadData } = require("../utilites/helper");
 let bcrypt = require("bcrypt");
-
-// const jwt = require("jsonwebtoken");
-
-// Ideally, we should verify the user when signing up by sending an email to verify but for this project might be overkill
+const User = require("../models/userModel");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 exports.signUp = async (req, res) => {
   try {
-    // let reqData = req.body;
-    // cmd = `Select * from Users where email = '${reqData.emailAddress}'`;
-    // [errMsg, result] = getData(cmd);
-    // if (errMsg) {
-    //   return res.status(500).send({
-    //     message:
-    //       "Something went wrong when looking up existing users in signup, look into it! " +
-    //       errMsg,
-    //   });
-    // }
-    // if (result) {
-    //   return res
-    //     .status(409)
-    //     .send({ message: "The user already exists, try logging in" });
-    // }
-    // const { name, emailAddress, password, address, phone_number } = reqData;
-    // // Hash the password
-    // //let salt = await bcrypt.genSalt(10);
-    // //hashedPass = await bcrypt.hash(password, salt);
-    // const values = [name, address, phone_number, emailAddress, password];
-    // cmd = `INSERT INTO Users (name, address, phone_number, emailAddress, password) VALUES ?`;
-    // [errMsg] = uploadData(cmd, values);
-    // if (errMsg) {
-    //   return res.status(500).send({ message: errMsg });
-    // }
-    // return res.status(201).send({ message: "User created successfully!" });
+    let { name, email, password, address, phoneNumber } = req.body;
+    let newUser = new User(name, email, password, address, phoneNumber);
+
+    let checkUser = await newUser.findUser();
+    if (checkUser[0].length > 0) {
+      return res
+        .status(400)
+        .send({ message: "User already exists, try logging in" });
+    }
+
+    let salt = await bcrypt.genSalt(10);
+    newUser.password = await bcrypt.hash(newUser.password, salt);
+
+    let id = await newUser.getId();
+    await newUser.createUser();
+    return res.status(200).send({
+      message: "User created with successfully",
+      user_id: id[0][0].id,
+    });
   } catch (err) {
     return res.status(500).send({ message: "Internal server error" + err });
   }
 };
 
 exports.login = async (req, res) => {
-  console.log("You have hit the login endpoint");
+  try {
+    let { email, password } = req.body;
+    let newUser = new User("", email, "", "", "");
+
+    let checkUser = await newUser.findUser();
+    if (checkUser[0].length === 0) {
+      return res
+        .status(400)
+        .send({ message: "User does not exist, consider signing up" });
+    }
+
+    let checkPassword = await bcrypt.compare(
+      password,
+      checkUser[0][0].password
+    );
+    if (!checkPassword) {
+      return res
+        .status(400)
+        .send({ message: "Incorrect password, try again!" });
+    }
+    let id = await newUser.getId();
+    let token = jwt.sign({ user_id: id[0][0].user_id }, process.env.JWT_SECRET);
+    return res.status(200).send({
+      message: "User logged in successfully",
+      token: token,
+      user_id: id[0][0].user_id,
+    });
+  } catch (err) {
+    return res.status(500).send({ message: "Internal server error" + err });
+  }
 };
 
 exports.deleteUser = async (req, res) => {

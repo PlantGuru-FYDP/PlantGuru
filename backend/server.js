@@ -36,6 +36,7 @@ const ALL_ROUTES = require("./api/utilites/all_routes");
 app.use("/api", ALL_ROUTES.sensor);
 app.use("/api", ALL_ROUTES.watering);
 app.use("/api", ALL_ROUTES.plant);
+app.use("/api", ALL_ROUTES.auth);
 
 //Listening to the port
 app.listen(3000, () => console.log("Listening on port 3000"));

@@ -25,7 +25,7 @@ class SensorData {
     const cmd =
       "INSERT INTO SensorData (plant_id, ext_temp, light, humidity, soil_temp, soil_moisture_1, soil_moisture_2, time_stamp) VALUES ?";
 
-    connection.query(cmd, [values]);
+    return connection.query(cmd, [values]);
   }
   static readData(plant_id, time_stamp) {
     const cmd =

@@ -14,7 +14,7 @@ exports.sensorUpload = async (req, res) => {
       values.push(Object.values(sensorData));
     }
 
-    SensorData.uploadData(values);
+    await SensorData.uploadData(values);
     return res.status(200).send("Successfully uploaded sensor data");
   } catch (err) {
     return res.status(500).send({ message: err });
