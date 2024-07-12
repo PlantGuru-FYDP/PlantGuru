@@ -22,7 +22,7 @@ exports.signUp = async (req, res) => {
     let id = await newUser.getId();
     return res.status(200).send({
       message: "User created with successfully",
-      user_id: id[0][0].id,
+      user_id: id[0][0].user_id,
     });
   } catch (err) {
     return res.status(500).send({ message: "Internal server error" + err });
