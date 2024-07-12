@@ -1,7 +1,5 @@
 let Plant = require("../models/plantModel");
 
-// TODO: There needs to be functionality here to verify that token we send belongs to user
-// We verify in the middleware
 exports.plantRead = (req, res) => {
   try {
     const user_id = req.query.user_id;
@@ -14,13 +12,27 @@ exports.plantRead = (req, res) => {
 
 exports.plantUpload = async (req, res) => {
   try {
-    const { user_id, plant_name, age, last_watered, next_watering_time } =
+    let { user_id, plant_name, age, last_watered, next_watering_time } =
       req.body;
-    const values = [user_id, plant_name, age, last_watered, next_watering_time];
+    const plant = new Plant(
+      user_id,
+      plant_name,
+      age,
+      last_watered,
+      next_watering_time
+    );
 
-    await Plant.uploadData(values);
+    let checkPlant = await plant.getID();
+    if (checkPlant[0].length > 0) {
+      return res.status(400).send({ message: "Plant already exists!" });
+    }
 
-    return res.status(200).send({ message: "Plant data uploaded" });
+    await plant.uploadData();
+    let id = await plant.getID();
+    return res.status(200).send({
+      message: "Plant data uploaded",
+      plant_id: id[0][0].plant_id,
+    });
   } catch (err) {
     return res.status(500).send({ message: err });
   }

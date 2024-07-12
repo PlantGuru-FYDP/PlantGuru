@@ -3,6 +3,7 @@ const ALL_ROUTES = {
   watering: require("../routes/wateringEventRoutes"),
   plant: require("../routes/plantRoutes"),
   auth: require("../routes/authRoutes"),
+  provisioning: require("../routes/provisioningRoute"),
 };
 
 module.exports = ALL_ROUTES;

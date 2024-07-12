@@ -1,27 +1,48 @@
 const SensorData = require("../models/sensorModel");
 
-// A lot of similar code between controllers but its fine for now
 exports.sensorUpload = async (req, res) => {
   try {
-    const values = [];
     if (req.body.length) {
       for (const data of req.body) {
         const sensorData = new SensorData(data);
-        values.push(Object.values(sensorData));
+        await sensorData.uploadData();
       }
     } else {
       const sensorData = new SensorData(req.body);
-      values.push(Object.values(sensorData));
+      await sensorData.uploadData();
     }
 
-    await SensorData.uploadData(values);
     return res.status(200).send("Successfully uploaded sensor data");
   } catch (err) {
     return res.status(500).send({ message: err });
   }
 };
 
-// TODO Does this plant_id belong to me? required middleware
+exports.testSensorUpload = async (req, res) => {
+  try {
+    if (req.body.length) {
+      for (const data of req.body) {
+        const body = {
+          plant_id: req.plant_id,
+          ...data,
+        };
+        const sensorData = new SensorData(body);
+        await sensorData.uploadData();
+      }
+    } else {
+      const body = {
+        plant_id: req.plant_id,
+        ...req.body,
+      };
+      const sensorData = new SensorData(body);
+      await sensorData.uploadData();
+    }
+
+    return res.status(200).send("Successfully uploaded sensor data");
+  } catch (err) {
+    return res.status(500).send({ message: err });
+  }
+};
 exports.sensorRead = async (req, res) => {
   try {
     const plant_id = req.query.plant_id;
