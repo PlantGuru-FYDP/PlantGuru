@@ -4,7 +4,7 @@ let Plant = require("../models/plantModel");
 // We verify in the middleware
 exports.plantRead = (req, res) => {
   try {
-    const user_id = req.user.user_id;
+    const user_id = req.query.user_id;
     const data = Plant.readData(user_id);
     return res.status(200).send(data);
   } catch (err) {

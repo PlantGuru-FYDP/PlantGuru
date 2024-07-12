@@ -18,8 +18,8 @@ exports.signUp = async (req, res) => {
     let salt = await bcrypt.genSalt(10);
     newUser.password = await bcrypt.hash(newUser.password, salt);
 
-    let id = await newUser.getId();
     await newUser.createUser();
+    let id = await newUser.getId();
     return res.status(200).send({
       message: "User created with successfully",
       user_id: id[0][0].id,
