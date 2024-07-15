@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-exports.tokenVerify = (req, res, next) => {
+exports.plantTokenVerify = (req, res, next) => {
   try {
     const inputToken = req.header("Authorization");
     if (!inputToken) {
@@ -11,7 +11,7 @@ exports.tokenVerify = (req, res, next) => {
         if (error) {
           res.send(error);
         } else {
-          req.user_id = result.user_id;
+          req.plant_id = result.plant_id;
           next();
         }
       });

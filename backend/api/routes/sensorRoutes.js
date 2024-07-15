@@ -5,15 +5,20 @@ let {
   sensorUpload,
   sensorRead,
   sensorReadSeries,
+  testSensorUpload,
+  getLastNSensorReadings,
 } = require("../controllers/sensorDataController");
 
-// TODO middleware checks to make sure the data is fine
+let { plantTokenVerify } = require("../middlewares/plantTokenVerify");
 const { body } = require("express-validator");
 
 router.post("/sensorUpload", sensorUpload);
+
+router.post("/testSensorUpload", plantTokenVerify, testSensorUpload);
 
 router.get("/sensorRead", sensorRead);
 
 router.get("/sensorReadSeries", sensorReadSeries);
 
+router.get("/lastNSensorReadings", getLastNSensorReadings);
 module.exports = router;

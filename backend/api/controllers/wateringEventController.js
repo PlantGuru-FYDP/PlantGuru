@@ -19,12 +19,24 @@ exports.wateringUpload = async (req, res) => {
     return res.status(500).send(err.message);
   }
 };
-
 exports.wateringRead = async (req, res) => {
   try {
     const plant_id = req.query.plant_id;
+    const [rows] = await WateringEvent.readData(plant_id);
+    return res.status(200).send({ result: rows });
+  } catch (err) {
+    return res.status(500).send(err.message);
+  }
+};
+
+exports.wateringReadByPlantIdAndTimestamp = async (req, res) => {
+  try {
+    const plant_id = req.query.plant_id;
     const time_stamp = req.query.time_stamp;
-    const [rows] = await WateringEvent.readData(plant_id, time_stamp);
+    const [rows] = await WateringEvent.readDataWithTimestamp(
+      plant_id,
+      time_stamp
+    );
     return res.status(200).send({ result: rows });
   } catch (err) {
     return res.status(500).send(err.message);

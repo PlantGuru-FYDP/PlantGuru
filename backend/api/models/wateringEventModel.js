@@ -26,7 +26,12 @@ class WateringEvent {
     connection.query(cmd, [values]);
   }
 
-  static readData(plant_id, time_stamp) {
+  static readData(plant_id) {
+    const cmd = "Select * from WateringEvent where plant_id = ?";
+    return connection.query(cmd, [plant_id]);
+  }
+
+  static readDataWithTimestamp(plant_id, time_stamp) {
     const cmd =
       "Select * from WateringEvent where plant_id = ? AND time_stamp = ?";
     return connection.query(cmd, [plant_id, time_stamp]);
