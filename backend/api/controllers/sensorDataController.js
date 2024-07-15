@@ -69,3 +69,14 @@ exports.sensorReadSeries = async (req, res) => {
     return res.status(500).send({ message: err });
   }
 };
+
+exports.getLastNSensorReadings = async (req, res) => {
+  try {
+    const plant_id = parseInt(req.query.plant_id);
+    const n = parseInt(req.query.n);
+    const [rows] = await SensorData.getLastNSensorReadings(plant_id, n);
+    return res.status(200).send({ result: rows });
+  } catch (err) {
+    return res.status(500).send({ message: err });
+  }
+};

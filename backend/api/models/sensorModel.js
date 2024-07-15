@@ -47,6 +47,11 @@ class SensorData {
       "Select * from SensorData where plant_id = ? AND time_stamp >= ? AND time_stamp <= time_stamp2";
     return connection.query(cmd, [plant_id, time_stamp1, time_stamp2]);
   }
+  static getLastNSensorReadings(plant_id, n) {
+    const cmd =
+      "Select * from SensorData where plant_id = ? ORDER BY time_stamp DESC LIMIT ?";
+    return connection.query(cmd, [plant_id, n]);
+  }
 }
 
 module.exports = SensorData;

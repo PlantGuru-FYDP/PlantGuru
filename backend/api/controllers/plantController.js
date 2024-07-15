@@ -1,9 +1,9 @@
 let Plant = require("../models/plantModel");
 
-exports.plantRead = (req, res) => {
+exports.plantRead = async (req, res) => {
   try {
     const user_id = req.query.user_id;
-    const data = Plant.readData(user_id);
+    const [data] = await Plant.readData(user_id);
     return res.status(200).send(data);
   } catch (err) {
     return res.status(500).send({ message: err });

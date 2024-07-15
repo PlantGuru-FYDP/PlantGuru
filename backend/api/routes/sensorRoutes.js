@@ -6,6 +6,7 @@ let {
   sensorRead,
   sensorReadSeries,
   testSensorUpload,
+  getLastNSensorReadings,
 } = require("../controllers/sensorDataController");
 
 let { plantTokenVerify } = require("../middlewares/plantTokenVerify");
@@ -19,4 +20,5 @@ router.get("/sensorRead", sensorRead);
 
 router.get("/sensorReadSeries", sensorReadSeries);
 
+router.get("/lastNSensorReadings", getLastNSensorReadings);
 module.exports = router;

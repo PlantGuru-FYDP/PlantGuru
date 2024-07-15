@@ -4,6 +4,7 @@ let router = express.Router();
 const {
   wateringUpload,
   wateringRead,
+  wateringReadByPlantIdAndTimestamp,
   wateringReadSeries,
 } = require("../controllers/wateringEventController");
 
@@ -12,6 +13,12 @@ const { body } = require("express-validator");
 router.post("/wateringUpload", wateringUpload);
 
 router.get("/wateringRead", wateringRead);
+
+// not used atm
+router.get(
+  "/wateringReadByPlantIdAndTimestamp",
+  wateringReadByPlantIdAndTimestamp
+);
 
 router.get("/sensorReadSeries", wateringReadSeries);
 
