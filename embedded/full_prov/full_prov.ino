@@ -161,6 +161,8 @@ void setup() {
       // Scheduled tasks
       scheduler.add([&]() { sensorManager.run(); }, SENSOR_UPDATE_INTERVAL);
       String test = "test";
+      String url = String(PLANTGURU_SERVER);
+      url += "sensorUpload";
       scheduler.add([&]() { postSensorData(PLANTGURU_SERVER, test, 1); }, WIFI_UPDATE_INTERVAL);
       break;
     }
