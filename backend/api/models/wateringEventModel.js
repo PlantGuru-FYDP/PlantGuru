@@ -1,3 +1,5 @@
+const connection = require("../../db/connection");
+
 class WateringEvent {
   constructor(
     watering_duration,
