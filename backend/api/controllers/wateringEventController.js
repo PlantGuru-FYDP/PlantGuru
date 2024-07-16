@@ -2,26 +2,24 @@ const WateringEvent = require("../models/wateringEventModel");
 
 exports.wateringUpload = async (req, res) => {
   try {
-    const values = [];
     if (req.body.length) {
       for (const data of req.body) {
         const wateringEvent = new WateringEvent(data);
-        values.push(Object.values(wateringEvent));
+        await wateringEvent.uploadData();
       }
     } else {
       const wateringEvent = new WateringEvent(req.body);
-      values.push(Object.values(wateringEvent));
+      await wateringEvent.uploadData();
     }
 
-    WateringEvent.uploadData(values);
     return res.status(200).send("Successfully uploaded watering event data");
   } catch (err) {
-    return res.status(500).send(err.message);
+    return res.status(500).send(err);
   }
 };
 exports.wateringRead = async (req, res) => {
   try {
-    const plant_id = req.query.plant_id;
+    const plant_id = parseInt(req.query.plant_id);
     const [rows] = await WateringEvent.readData(plant_id);
     return res.status(200).send({ result: rows });
   } catch (err) {
@@ -31,7 +29,7 @@ exports.wateringRead = async (req, res) => {
 
 exports.wateringReadByPlantIdAndTimestamp = async (req, res) => {
   try {
-    const plant_id = req.query.plant_id;
+    const plant_id = parseInt(req.query.plant_id);
     const time_stamp = req.query.time_stamp;
     const [rows] = await WateringEvent.readDataWithTimestamp(
       plant_id,
@@ -44,7 +42,7 @@ exports.wateringReadByPlantIdAndTimestamp = async (req, res) => {
 };
 exports.wateringReadSeries = async (req, res) => {
   try {
-    const plant_id = req.query.plant_id;
+    const plant_id = parseInt(req.query.plant_id);
     const time_stamp1 = req.query.time_stamp1;
     const time_stamp2 = req.query.time_stamp2;
     const [rows] = await WateringEvent.readDataSeries(

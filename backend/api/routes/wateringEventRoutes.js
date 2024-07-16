@@ -20,6 +20,6 @@ router.get(
   wateringReadByPlantIdAndTimestamp
 );
 
-router.get("/sensorReadSeries", wateringReadSeries);
+router.get("/wateringReadSeries", wateringReadSeries);
 
 module.exports = router;
