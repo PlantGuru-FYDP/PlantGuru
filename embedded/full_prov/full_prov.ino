@@ -17,7 +17,7 @@
 #define RESET_LISTENER_UPDATE_INTERVAL 100
 #define SENSOR_UPDATE_INTERVAL 0
 
-#define PLANTGURU_SERVER "http://18.191.162.227:3000/test"
+#define PLANTGURU_SERVER "http://18.191.162.227:3000/api/sensorUpload" //Updated to proper API 
 
 enum DeviceMode {
     MODE_PROVISION,
@@ -27,7 +27,8 @@ enum DeviceMode {
 SensorManager sensorManager;
 Scheduler scheduler;
 
-DeviceMode mode = MODE_PROVISION;
+// DeviceMode mode = MODE_PROVISION;
+DeviceMode mode = MODE_ACTIVATED; //Hard coded to upload data and skip provisioning
 bool beginRestart = false;
 const char* service_name = "GURU_123"; // Name of your device
 
@@ -90,7 +91,6 @@ void printWiFiCredentials() {
     Serial.println(password);
 }
 
-String test = "test";
 
 void setup() {
 
@@ -98,10 +98,11 @@ void setup() {
   sensorManager.setupBeforeSerial();
 
   Serial.begin(115200);
-
+  Serial.println("testing");
   sensorManager.setupAfterSerial();
   preferences.begin("device_prefs", false);
-  mode = (DeviceMode)preferences.getUInt("device_mode", MODE_PROVISION);
+  // mode = (DeviceMode)preferences.getUInt("device_mode", MODE_PROVISION);
+  //Commented out to get around provisioning, please add back when provisioning is working
 
   Serial.print("Device mode: ");
   Serial.println(mode == MODE_PROVISION ? "Provision" : mode == MODE_ACTIVATED ? "Activated" : "Unknown");
@@ -141,10 +142,13 @@ void setup() {
     case MODE_ACTIVATED: {
       Serial.println("Beginning Regular Setup");
       preferences.begin("device_prefs");
-      WiFi.begin(preferences.getString("wifi_ssid", "No SSID").c_str(), preferences.getString("wifi_password", "No Password").c_str());
+      //Setup stuff in preferences
+
+      //HARD CODED WIFI STUFF
+      WiFi.begin("Data City 263 - 2.4GHz", "ECE358PROBLEM");
       preferences.end();
       Serial.println("Connecting to WiFi...");
-      if (WiFi.status() != WL_CONNECTED) {
+      if (WiFi.status() == WL_CONNECTED) {
         delay(1000);
         Serial.println("Connected to wifi");
       } else {
@@ -156,7 +160,7 @@ void setup() {
 
       // Scheduled tasks
       scheduler.add([&]() { sensorManager.run(); }, SENSOR_UPDATE_INTERVAL);
-      
+      String test = "test";
       scheduler.add([&]() { postSensorData(PLANTGURU_SERVER, test, 1); }, WIFI_UPDATE_INTERVAL);
       break;
     }

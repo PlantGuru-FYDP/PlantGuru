@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include "Memory.h"
+#include <time.h>
 
 #define ntpServer "pool.ntp.org"
 
@@ -53,12 +54,34 @@ bool postSensorData(const String& url, String& postData, int numRetries) {
   int maxPerRequest = 10;
   SensorData sendSensorDataBuffer[maxPerRequest];
   int i = 0;
+  String json_info = "[";
   while (popFront(cb, data) && i < maxPerRequest) {
     sendSensorDataBuffer[i] = data;
+    //Do conversion here 
+    time_t unixTimestampSecs = sendSensorDataBuffer[i].timestamp;
+
+    struct tm timeInfo;
+    gmtime_r(&unixTimestampSecs, &timeInfo); // Convert to UTC time
+
+    char timestampStr[20];
+    strftime(timestampStr, sizeof(timestampStr), "%Y-%m-%dT%H:%M:%S", &timeInfo);
+    sendSensorDataBuffer[i].date = String(timestampStr);
+    Serial.println(String(timestampStr));
+    
+    //Placeholder hard coded
+    sendSensorDataBuffer[i].plant_id = 6;
+    if (i != 0){
+      json_info = json_info + "," + sendSensorDataBuffer[i].toJson();
+    }else{
+      json_info = json_info + sendSensorDataBuffer[i].toJson();
+    }
     i++;
   }
+  json_info = json_info + "]";
+  Serial.println(json_info);
+  
   while(numRetries-- > 0) {
-    httpResponseCode = http.POST(postData);
+    httpResponseCode = http.POST(json_info);
     if(httpResponseCode > 0) {
       String response = http.getString();
       Serial.println("HTTP Response code: " + String(httpResponseCode));
