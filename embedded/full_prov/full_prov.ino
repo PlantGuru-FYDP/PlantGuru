@@ -15,9 +15,9 @@
 #define WIFI_UPDATE_INTERVAL 20000
 #define RESET_BTN_UPDATE_INTERVAL 100
 #define RESET_LISTENER_UPDATE_INTERVAL 100
-#define SENSOR_UPDATE_INTERVAL 0
+#define SENSOR_UPDATE_INTERVAL 1800000
 
-#define PLANTGURU_SERVER "http://18.191.162.227:3000/api/sensorUpload" //Updated to proper API 
+#define PLANTGURU_SERVER "http://18.191.162.227:3000/api/" //Updated to proper API 
 
 enum DeviceMode {
     MODE_PROVISION,
@@ -30,7 +30,7 @@ Scheduler scheduler;
 // DeviceMode mode = MODE_PROVISION;
 DeviceMode mode = MODE_ACTIVATED; //Hard coded to upload data and skip provisioning
 bool beginRestart = false;
-const char* service_name = "GURU_123"; // Name of your device
+const char* service_name = "GURU_1"; // Name of your device
 
 void SysProvEvent(arduino_event_t *sys_event) {
     switch (sys_event->event_id) {
@@ -161,9 +161,7 @@ void setup() {
       // Scheduled tasks
       scheduler.add([&]() { sensorManager.run(); }, SENSOR_UPDATE_INTERVAL);
       String test = "test";
-      String url = String(PLANTGURU_SERVER);
-      url += "sensorUpload";
-      scheduler.add([&]() { postSensorData(PLANTGURU_SERVER, test, 1); }, WIFI_UPDATE_INTERVAL);
+      scheduler.add([&]() { postSensorData("http://18.191.162.227:3000/api/sensorUpload", test, 2); }, WIFI_UPDATE_INTERVAL);
       break;
     }
     default: {
