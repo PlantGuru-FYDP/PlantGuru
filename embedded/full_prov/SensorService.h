@@ -13,7 +13,7 @@
 #define soilPin2 A2
 
 #define DHTTYPE DHT22
-#define ANALOG_MAX 1023
+#define ANALOG_MAX 4095.0
 
 OneWire oneWire(DS18S20_Pin);
 DallasTemperature sensors(&oneWire);
