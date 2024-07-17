@@ -30,7 +30,7 @@ Scheduler scheduler;
 // DeviceMode mode = MODE_PROVISION;
 DeviceMode mode = MODE_ACTIVATED; //Hard coded to upload data and skip provisioning
 bool beginRestart = false;
-const char* service_name = "GURU_1"; // Name of your device
+const char* service_name = "GURU_2"; // Name of your device
 
 void SysProvEvent(arduino_event_t *sys_event) {
     switch (sys_event->event_id) {

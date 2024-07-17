@@ -73,7 +73,7 @@ bool postSensorData(const String& url, String& postData, int numRetries) {
     sendSensorDataBuffer[i].date = String(timestampStr);
     
     //Placeholder hard coded, remove when there's a proper way to pass in the plant_id
-    sendSensorDataBuffer[i].plant_id = 7;
+    sendSensorDataBuffer[i].plant_id = 9;
     if (i != 0){
       json_info = json_info + "," + sendSensorDataBuffer[i].toJson();
     }else{
