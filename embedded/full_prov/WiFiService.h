@@ -44,10 +44,15 @@ bool postSensorData(const String& url, String& postData, int numRetries) {
     return false;
   }
 
-  SensorData data;
+  if (isEmpty(cb)){
+    Serial.println("Cannot post: No Data");
+    return false;
+  }
 
+  SensorData data;
   HTTPClient http;
   http.begin(url);
+
   http.addHeader("Content-Type", "application/json");
 
   int httpResponseCode = 0;
@@ -66,10 +71,9 @@ bool postSensorData(const String& url, String& postData, int numRetries) {
     char timestampStr[20];
     strftime(timestampStr, sizeof(timestampStr), "%Y-%m-%dT%H:%M:%S", &timeInfo);
     sendSensorDataBuffer[i].date = String(timestampStr);
-    Serial.println(String(timestampStr));
     
-    //Placeholder hard coded
-    sendSensorDataBuffer[i].plant_id = 6;
+    //Placeholder hard coded, remove when there's a proper way to pass in the plant_id
+    sendSensorDataBuffer[i].plant_id = 7;
     if (i != 0){
       json_info = json_info + "," + sendSensorDataBuffer[i].toJson();
     }else{
@@ -79,7 +83,6 @@ bool postSensorData(const String& url, String& postData, int numRetries) {
   }
   json_info = json_info + "]";
   Serial.println(json_info);
-  
   while(numRetries-- > 0) {
     httpResponseCode = http.POST(json_info);
     if(httpResponseCode > 0) {
@@ -95,6 +98,7 @@ bool postSensorData(const String& url, String& postData, int numRetries) {
       }
     } else {
       Serial.println("Attempt failed, retrying...");
+      Serial.println(String(httpResponseCode));
       delay(1000); // Wait a second before retrying
     }
   }
