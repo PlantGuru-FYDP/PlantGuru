@@ -4,6 +4,7 @@ let router = express.Router();
 const {
   wateringUpload,
   wateringRead,
+  wateringReadByPlantIdAndTimestamp,
   wateringReadSeries,
 } = require("../controllers/wateringEventController");
 
@@ -13,6 +14,12 @@ router.post("/wateringUpload", wateringUpload);
 
 router.get("/wateringRead", wateringRead);
 
-router.get("/sensorReadSeries", wateringReadSeries);
+// not used atm
+router.get(
+  "/wateringReadByPlantIdAndTimestamp",
+  wateringReadByPlantIdAndTimestamp
+);
+
+router.get("/wateringReadSeries", wateringReadSeries);
 
 module.exports = router;
