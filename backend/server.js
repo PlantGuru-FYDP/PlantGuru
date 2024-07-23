@@ -38,6 +38,7 @@ app.use("/api", ALL_ROUTES.watering);
 app.use("/api", ALL_ROUTES.plant);
 app.use("/api", ALL_ROUTES.auth);
 app.use("/api", ALL_ROUTES.provisioning);
+app.use("/api", ALL_ROUTES.ml);
 
 //Listening to the port
 app.listen(3000, () => console.log("Listening on port 3000"));

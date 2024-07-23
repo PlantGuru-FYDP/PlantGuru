@@ -52,6 +52,12 @@ class SensorData {
       "Select * from SensorData where plant_id = ? ORDER BY time_stamp DESC LIMIT ?";
     return connection.query(cmd, [plant_id, n]);
   }
+
+  static readLatestData(plant_id) {
+    const cmd =
+      "Select * from SensorData where plant_id = ? ORDER BY time_stamp DESC LIMIT 1";
+    return connection.query(cmd, [plant_id]);
+  }
 }
 
 module.exports = SensorData;

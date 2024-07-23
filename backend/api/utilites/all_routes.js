@@ -4,6 +4,7 @@ const ALL_ROUTES = {
   plant: require("../routes/plantRoutes"),
   auth: require("../routes/authRoutes"),
   provisioning: require("../routes/provisioningRoute"),
+  ml: require("../routes/mlRoute"),
 };
 
 module.exports = ALL_ROUTES;

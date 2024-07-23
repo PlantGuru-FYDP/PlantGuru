@@ -1,14 +1,12 @@
-import pandas as pd
 import numpy as np
 import pickle
 import random
 
 
-with open('decision_tree', 'rb') as file:
-    model = pickle.load(file)
+def soil_moisture_predict(input_arr):
 
-def soil_moisture_predict(model, input_arr):
-    
+    with open('decision_tree', 'rb') as file:
+        model = pickle.load(file)
     # input_arr should be array like -> [ext_temp, humidity, light, current soil_moisture]
     predicted_moisture = model.predict(input_arr)[0]
     predicted_moisture = input_arr[0][3] - round(random.uniform(0.8, 1.2), 2)
@@ -29,7 +27,7 @@ def average_moisture_loss_rate(temp, light, humidity):
     
     return max(moisture_loss_rate, 0.1)  # Ensure it's never zero or negative
 
-def predict_next_watering_time(model, predicted_moisture, current_temp, current_light, current_humidity):
+def predict_next_watering_time(predicted_moisture, current_temp, current_light, current_humidity):
     # Threshold for watering
     moisture_threshold = 35.0
     
@@ -50,8 +48,9 @@ input_arr = []
 input_arr = np.array([current_temp, current_humidity, current_light, current_soil_moisture])
 input_arr = input_arr.reshape(1,-1)
 
-predicted_moisture = soil_moisture_predict(model, input_arr)
+predicted_moisture = soil_moisture_predict(input_arr)
 print(predicted_moisture)
 
-hours_until_watering = predict_next_watering_time(model, predicted_moisture, current_temp, current_light, current_humidity)
+hours_until_watering = predict_next_watering_time(predicted_moisture, current_temp, current_light, current_humidity)
 print(f"The plant will need to be watered in approximately {hours_until_watering} hours.")
+

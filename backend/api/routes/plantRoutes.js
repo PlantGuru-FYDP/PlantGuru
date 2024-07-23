@@ -1,4 +1,3 @@
-// Routes relating to uploading data to the db
 let express = require("express");
 const { plantRead, plantUpload } = require("../controllers/plantController");
 let router = express.Router();
