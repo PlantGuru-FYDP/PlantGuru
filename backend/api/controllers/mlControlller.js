@@ -8,13 +8,15 @@ exports.model = async (req, res) => {
     const current_temp = rows[0].ext_temp;
     const current_light = rows[0].light;
     const current_humidity = rows[0].humidity;
-    const current_soil_moisture = rows[0].soil_moisture_1;
+    const current_soil_moisture_1 = rows[0].soil_moisture_1;
+    const current_soil_moisture_2 = rows[0].soil_moisture_2;
 
     const input_arr = [
       current_temp,
       current_humidity,
       current_light,
-      current_soil_moisture,
+      current_soil_moisture_1,
+      current_soil_moisture_2,
     ];
     console.log(input_arr);
     const predicted_moisture = soil_moisture_predict([input_arr]);
@@ -33,7 +35,8 @@ exports.model = async (req, res) => {
 };
 
 function soil_moisture_predict(input_arr) {
-  return input_arr[0][3] - Math.round((Math.random() * 0.4 + 0.8) * 100) / 100;
+  avg_moisture = (input_arr[0][3] + input_arr[0][4]) / 2
+  return avg_moisture - Math.round((Math.random() * 0.4 + 0.8) * 100) / 100;
 }
 
 function average_moisture_loss_rate(temp, light, humidity) {
