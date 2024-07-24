@@ -40,10 +40,10 @@ function average_moisture_loss_rate(temp, light, humidity) {
   // This function should be defined based on historical data analysis
   // For now, we'll use a simple heuristic for demonstration
   // Example values for demonstration purposes
-  base_rate = 0.1  # base moisture loss rate per hour
-  temp_factor = (temp - 20) * 0.02  # increase rate with higher temperature
-  light_factor = (light / 100) * 0.1  # increase rate with more light
-  humidity_factor = (50 - humidity) * 0.02  # decrease rate with higher humidity
+  base_rate = 0.1 
+  temp_factor = (temp - 20) * 0.02 
+  light_factor = (light / 100) * 0.1 
+  humidity_factor = (50 - humidity) * 0.02 
 
   // Total moisture loss rate
   const moisture_loss_rate =
