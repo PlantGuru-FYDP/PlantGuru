@@ -33,7 +33,7 @@ exports.model = async (req, res) => {
 };
 
 function soil_moisture_predict(input_arr) {
-  return input_arr[0][3] - Math.round(Math.random() * 0.4 + 0.8, 2);
+  return input_arr[0][3] - Math.round((Math.random() * 0.4 + 0.8) * 100) / 100;
 }
 
 function average_moisture_loss_rate(temp, light, humidity) {
