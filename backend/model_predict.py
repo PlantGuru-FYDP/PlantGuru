@@ -49,13 +49,8 @@ input_arr = []
 input_arr = np.array([current_temp, current_humidity, current_light, current_soil_moisture])
 input_arr = input_arr.reshape(1,-1)
 
-<<<<<<< Updated upstream
 predicted_moisture = soil_moisture_predict(input_arr)
 print(predicted_moisture)
-=======
-predicted_moisture = soil_moisture_predict(model, input_arr)
-print(f"predicted moisture: {predicted_moisture}")
->>>>>>> Stashed changes
 
 hours_until_watering = predict_next_watering_time(predicted_moisture, current_temp, current_light, current_humidity)
 print(f"The plant will need to be watered in approximately {hours_until_watering} hours.")
