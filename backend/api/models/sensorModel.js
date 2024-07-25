@@ -36,10 +36,9 @@ class SensorData {
       this.time_stamp,
     ]);
   }
-  static readData(plant_id, time_stamp) {
-    const cmd =
-      "Select * from SensorData where plant_id = ? AND time_stamp = ?";
-    return connection.query(cmd, [plant_id, time_stamp]);
+  static readData(plant_id) {
+    const cmd = "Select * from SensorData where plant_id = ?";
+    return connection.query(cmd, [plant_id]);
   }
 
   static readDataSeries(plant_id, time_stamp1, time_stamp2) {

@@ -46,8 +46,7 @@ exports.testSensorUpload = async (req, res) => {
 exports.sensorRead = async (req, res) => {
   try {
     const plant_id = req.query.plant_id;
-    const time_stamp = req.query.time_stamp;
-    const [rows] = await SensorData.readData(plant_id, time_stamp);
+    const [rows] = await SensorData.readData(plant_id);
     return res.status(200).send({ result: rows });
   } catch (err) {
     return res.status(500).send({ message: err });
