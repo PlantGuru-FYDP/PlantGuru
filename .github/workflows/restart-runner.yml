@@ -1,0 +1,11 @@
+name: Restart Self-Hosted Runner
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    runs-on: self-hosted
+    steps:
+      - name: Restart PM2 Process
+        run: |
+          pm2 restart server
