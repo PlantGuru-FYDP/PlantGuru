@@ -58,10 +58,28 @@ exports.login = async (req, res) => {
       user_id: id[0][0].user_id,
     });
   } catch (err) {
-    return res.status(500).send({ message: "Internal server error" + err });
+    return res.status(500).send({ message: `Internal server error: ${err.message}` });
   }
 };
 
 exports.deleteUser = async (req, res) => {
   console.log("You have hit the delete User endpoint");
+};
+
+exports.updateUser = async (req, res) => {
+  try {
+    const { name, email, address, phone_number, user_id } = req.body;
+    
+    if (!user_id) {
+      return res.status(400).send({ message: "User ID is required" });
+    }
+
+    const user = new User(name, email, null, address, phone_number);
+    user.userId = user_id;
+    
+    await user.updateUser();
+    return res.status(200).send({ message: "User updated successfully" });
+  } catch (err) {
+    return res.status(500).send({ message: "Internal server error: " + err.message });
+  }
 };

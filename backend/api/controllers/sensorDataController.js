@@ -79,3 +79,45 @@ exports.getLastNSensorReadings = async (req, res) => {
     return res.status(500).send({ message: err });
   }
 };
+
+exports.getTimeSeriesData = async (req, res) => {
+  try {
+    const plant_id = parseInt(req.query.plant_id);
+    const start_time = req.query.start_time;
+    const end_time = req.query.end_time;
+    const granularity = req.query.granularity || 'raw';
+    const sensor_types = req.query.sensor_types ? req.query.sensor_types.split(',') : [];
+
+    const [rows] = await SensorData.getTimeSeriesData(
+      plant_id,
+      start_time,
+      end_time,
+      granularity,
+      sensor_types
+    );
+
+    return res.status(200).send({ result: rows });
+  } catch (err) {
+    return res.status(500).send({ message: err.message });
+  }
+};
+
+exports.getAnalysis = async (req, res) => {
+  try {
+    const plant_id = parseInt(req.query.plant_id);
+    const start_time = req.query.start_time;
+    const end_time = req.query.end_time;
+    const metrics = req.query.metrics ? req.query.metrics.split(',') : ['min', 'max', 'avg'];
+
+    const [rows] = await SensorData.getAnalysis(
+      plant_id,
+      start_time,
+      end_time,
+      metrics
+    );
+
+    return res.status(200).send({ result: rows[0] });
+  } catch (err) {
+    return res.status(500).send({ message: err.message });
+  }
+};

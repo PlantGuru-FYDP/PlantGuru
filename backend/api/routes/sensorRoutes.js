@@ -7,10 +7,12 @@ let {
   sensorReadSeries,
   testSensorUpload,
   getLastNSensorReadings,
+  getTimeSeriesData,
+  getAnalysis
 } = require("../controllers/sensorDataController");
 
 let { plantTokenVerify } = require("../middlewares/plantTokenVerify");
-const { body } = require("express-validator");
+const { body, query } = require("express-validator");
 
 router.post("/sensorUpload", sensorUpload);
 
@@ -21,4 +23,20 @@ router.get("/sensorRead", sensorRead);
 router.get("/sensorReadSeries", sensorReadSeries);
 
 router.get("/lastNSensorReadings", getLastNSensorReadings);
+
+router.get("/timeSeriesData", [
+  query('plant_id').isInt(),
+  query('start_time').isISO8601(),
+  query('end_time').isISO8601(),
+  query('granularity').optional().isIn(['raw', 'minute', 'hour', 'day', 'week', 'month']),
+  query('sensor_types').optional().isString()
+], getTimeSeriesData);
+
+router.get("/analysis", [
+  query('plant_id').isInt(),
+  query('start_time').isISO8601(),
+  query('end_time').isISO8601(),
+  query('metrics').optional().isString()
+], getAnalysis);
+
 module.exports = router;
