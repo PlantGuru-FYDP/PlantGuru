@@ -2,6 +2,8 @@ let bcrypt = require("bcrypt");
 const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const NotificationSettings = require('../models/notificationSettingsModel');
+const { DEFAULT_USER_SETTINGS } = require('../constants/defaultSettings');
 
 exports.signUp = async (req, res) => {
   try {
@@ -20,12 +22,33 @@ exports.signUp = async (req, res) => {
 
     await newUser.createUser();
     let id = await newUser.getId();
+    const user_id = id[0][0].user_id;
+
+    const defaultUserSettings = {
+      userId: user_id,
+      email: email,
+      ...DEFAULT_USER_SETTINGS
+    };
+    
+    await NotificationSettings.createUserSettings(user_id, defaultUserSettings);
+    console.log(`[signUp] Created default notification settings for user_id: ${user_id}`);
+    
+    const token = jwt.sign({ user_id }, process.env.JWT_SECRET);
+
     return res.status(200).send({
-      message: "User created with successfully",
-      user_id: id[0][0].user_id,
+      message: "User created successfully",
+      user_id: user_id,
+      token: token,
+      user: {
+        name,
+        email,
+        address,
+        phone_number: phoneNumber
+      }
     });
   } catch (err) {
-    return res.status(500).send({ message: "Internal server error" + err });
+    console.error('[signUp] Error:', err);
+    return res.status(500).send({ message: "Internal server error: " + err.message });
   }
 };
 
@@ -50,35 +73,47 @@ exports.login = async (req, res) => {
         .status(400)
         .send({ message: "Incorrect password, try again!" });
     }
-    let id = await newUser.getId();
-    let token = jwt.sign({ user_id: id[0][0].user_id }, process.env.JWT_SECRET);
+
+    const user_id = checkUser[0][0].user_id;
+    const token = jwt.sign({ user_id }, process.env.JWT_SECRET);
+
     return res.status(200).send({
       message: "User logged in successfully",
       token: token,
-      user_id: id[0][0].user_id,
+      user_id: user_id,
+      user: {
+        name: checkUser[0][0].name,
+        email: checkUser[0][0].email,
+        address: checkUser[0][0].address,
+        phone_number: checkUser[0][0].phone_number
+      }
     });
   } catch (err) {
     return res.status(500).send({ message: `Internal server error: ${err.message}` });
   }
 };
 
-exports.deleteUser = async (req, res) => {
-  console.log("You have hit the delete User endpoint");
-};
-
 exports.updateUser = async (req, res) => {
   try {
-    const { name, email, address, phone_number, user_id } = req.body;
+    const user_id = req.user_id;
+    const { name, email, address, phone_number } = req.body;
     
     if (!user_id) {
-      return res.status(400).send({ message: "User ID is required" });
+      return res.status(400).send({ message: "Authentication required" });
     }
 
-    const user = new User(name, email, null, address, phone_number);
-    user.userId = user_id;
-    
+    const user = new User(name, email, null, address, phone_number, user_id);
     await user.updateUser();
-    return res.status(200).send({ message: "User updated successfully" });
+
+    return res.status(200).send({ 
+      message: "User updated successfully",
+      user: {
+        name,
+        email,
+        address,
+        phone_number
+      }
+    });
   } catch (err) {
     return res.status(500).send({ message: "Internal server error: " + err.message });
   }

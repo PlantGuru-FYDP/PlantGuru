@@ -6,7 +6,7 @@ exports.verifyPlantWithUser = async (req, res, next) => {
     // We get this from exctracting the token in the tokenVerify middleware
     const user_id = req.user_id;
     const plants = await Plant.readData(user_id);
-    belongsToUser = false;
+    let belongsToUser = false;
     for (let plant of plants[0]) {
       if (plant.plant_id === req.body.plant_id) {
         belongsToUser = true;

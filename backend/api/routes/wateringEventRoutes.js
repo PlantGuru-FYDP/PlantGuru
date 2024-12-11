@@ -6,9 +6,10 @@ const {
   wateringRead,
   wateringReadByPlantIdAndTimestamp,
   wateringReadSeries,
+  getLastWateringEvent,
 } = require("../controllers/wateringEventController");
 
-const { body } = require("express-validator");
+const { body, query } = require("express-validator");
 
 router.post("/wateringUpload", wateringUpload);
 
@@ -20,6 +21,12 @@ router.get(
   wateringReadByPlantIdAndTimestamp
 );
 
-router.get("/wateringReadSeries", wateringReadSeries);
+router.get("/wateringReadSeries", [
+    query('plant_id').isInt(),
+    query('time_stamp1').isISO8601(),
+    query('time_stamp2').isISO8601()
+], wateringReadSeries);
+
+router.get("/lastWateringEvent", getLastWateringEvent);
 
 module.exports = router;

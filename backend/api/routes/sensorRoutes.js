@@ -8,7 +8,9 @@ let {
   testSensorUpload,
   getLastNSensorReadings,
   getTimeSeriesData,
-  getAnalysis
+  getAnalysis,
+  getSensorStats,
+  getSensorTrendline
 } = require("../controllers/sensorDataController");
 
 let { plantTokenVerify } = require("../middlewares/plantTokenVerify");
@@ -28,7 +30,7 @@ router.get("/timeSeriesData", [
   query('plant_id').isInt(),
   query('start_time').isISO8601(),
   query('end_time').isISO8601(),
-  query('granularity').optional().isIn(['raw', 'minute', 'hour', 'day', 'week', 'month']),
+  query('granularity').optional().isInt().default(0),
   query('sensor_types').optional().isString()
 ], getTimeSeriesData);
 
@@ -38,5 +40,21 @@ router.get("/analysis", [
   query('end_time').isISO8601(),
   query('metrics').optional().isString()
 ], getAnalysis);
+
+router.get("/sensorStats", [
+  query('plant_id').isInt(),
+  query('sensor_type').isString(),
+  query('start_time').isISO8601(),
+  query('end_time').isISO8601(),
+  query('remove_outliers').optional().isBoolean(),
+  query('smooth_data').optional().isBoolean()
+], getSensorStats);
+
+router.get("/sensorTrendline", [
+  query('plant_id').isInt(),
+  query('sensor_type').isString(),
+  query('start_time').isISO8601(),
+  query('end_time').isISO8601()
+], getSensorTrendline);
 
 module.exports = router;

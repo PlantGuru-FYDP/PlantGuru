@@ -27,9 +27,20 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
         cache-dependency-path: './backend/package-lock.json'
+    - run: npm cache clean --force
     - run: npm ci
     - run: |
+        # If .env doesn't exist, create it
         touch .env
+        # Save existing env vars
+        cp .env .env.backup || true
+        # Write new env vars
         echo "${{ secrets.PROD_ENV}}" > .env
+        # Restore old env vars, without overwriting new ones
+        cat .env.backup >> .env || true
+        # Remove duplicates while preserving the last occurrence of each variable
+        awk -F '=' '!seen[$1]++' .env > .env.tmp && mv .env.tmp .env
+        # Cleanup
+        rm -f .env.backup
     - run: pm2 restart server
 

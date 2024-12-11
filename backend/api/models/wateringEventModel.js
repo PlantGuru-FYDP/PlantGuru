@@ -49,9 +49,22 @@ class WateringEvent {
   }
 
   static readDataSeries(plant_id, time_stamp1, time_stamp2) {
-    const cmd =
-      "Select * from WateringEvent where plant_id = ? AND time_stamp >= ? AND time_stamp <= time_stamp2";
-    return connection.query(cmd, [plant_id, time_stamp1, time_stamp2]);
+    return connection.query(
+      `
+      SELECT * 
+      FROM WateringEvent 
+      WHERE plant_id = ? 
+        AND time_stamp >= ? 
+        AND time_stamp <= ?
+      ORDER BY time_stamp DESC
+    `,
+      [plant_id, time_stamp1, time_stamp2]
+    );
+  }
+
+  static readLastEvent(plant_id) {
+    const cmd = "SELECT * FROM WateringEvent WHERE plant_id = ? ORDER BY time_stamp DESC LIMIT 1";
+    return connection.query(cmd, [plant_id]);
   }
 }
 

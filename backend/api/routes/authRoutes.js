@@ -1,16 +1,24 @@
-let express = require("express");
-let router = express.Router();
+const express = require("express");
+const router = express.Router();
 const { body } = require("express-validator");
-// let { tokenVerify } = require("../middlewares/tokenVerify.js");
+const { tokenVerify } = require("../middlewares/tokenVerify");
+const { signUp, login, updateUser } = require("../controllers/authController");
 
-let { signUp, login, deleteUser, updateUser } = require("../controllers/authController");
+router.post("/signup", [
+  body("email").isEmail(),
+  body("password").isLength({ min: 6 }),
+  body("name").notEmpty()
+], signUp);
 
-router.post("/signup", signUp);
+router.post("/login", [
+  body("email").isEmail(),
+  body("password").notEmpty()
+], login);
 
-router.post("/login", login);
-
-router.get("/deleteUser", deleteUser);
-
-router.put("/updateUser", updateUser);
+router.put("/updateUser", [
+  tokenVerify,
+  body("email").isEmail(),
+  body("name").notEmpty()
+], updateUser);
 
 module.exports = router;
