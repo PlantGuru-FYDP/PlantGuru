@@ -27,10 +27,12 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
         cache-dependency-path: './backend/package-lock.json'
-    - run: npm cache clean --force
-    - run: npm install
-    - run: npm ci
-    - env:
+    - name: Install dependencies
+      run: |
+        export NODE_OPTIONS="--max_old_space_size=512"
+        npm ci --prefer-offline --no-audit
+    - name: Restart Server
+      env:
         RDS_HOSTNAME: ${{ secrets.RDS_HOSTNAME }}
         RDS_USERNAME: ${{ secrets.RDS_USERNAME }}
         RDS_PASSWORD: ${{ secrets.RDS_PASSWORD }}
