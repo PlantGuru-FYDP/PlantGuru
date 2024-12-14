@@ -29,18 +29,14 @@ jobs:
         cache-dependency-path: './backend/package-lock.json'
     - run: npm cache clean --force
     - run: npm ci
-    - run: |
-        # If .env doesn't exist, create it
-        touch .env
-        # Save existing env vars
-        cp .env .env.backup || true
-        # Write new env vars
-        echo "${{ secrets.PROD_ENV}}" > .env
-        # Restore old env vars, without overwriting new ones
-        cat .env.backup >> .env || true
-        # Remove duplicates while preserving the last occurrence of each variable
-        awk -F '=' '!seen[$1]++' .env > .env.tmp && mv .env.tmp .env
-        # Cleanup
-        rm -f .env.backup
-    - run: pm2 restart server
+    - env:
+        RDS_HOSTNAME: ${{ secrets.RDS_HOSTNAME }}
+        RDS_USERNAME: ${{ secrets.RDS_USERNAME }}
+        RDS_PASSWORD: ${{ secrets.RDS_PASSWORD }}
+        RDS_PORT: ${{ secrets.RDS_PORT }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+        FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      run: pm2 restart server
 
