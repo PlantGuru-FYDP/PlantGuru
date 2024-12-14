@@ -28,6 +28,7 @@ jobs:
         cache: 'npm'
         cache-dependency-path: './backend/package-lock.json'
     - run: npm cache clean --force
+    - run: npm install
     - run: npm ci
     - env:
         RDS_HOSTNAME: ${{ secrets.RDS_HOSTNAME }}
