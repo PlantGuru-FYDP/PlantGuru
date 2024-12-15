@@ -10,7 +10,6 @@ on:
     paths: 'backend/**'
 jobs:
   build:
-
     runs-on: self-hosted
     defaults:
        run:
@@ -20,6 +19,9 @@ jobs:
         node-version: [18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     steps:
+    - name: Stop existing server
+      run: pm2 stop all || true
+      
     - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
@@ -31,7 +33,7 @@ jobs:
       run: |
         export NODE_OPTIONS="--max_old_space_size=512"
         npm ci --prefer-offline --no-audit
-    - name: Restart Server
+    - name: Start Server
       env:
         RDS_HOSTNAME: ${{ secrets.RDS_HOSTNAME }}
         RDS_USERNAME: ${{ secrets.RDS_USERNAME }}
@@ -41,5 +43,5 @@ jobs:
         FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
         FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-      run: pm2 restart ecosystem.config.js
+      run: pm2 start ecosystem.config.js
 
