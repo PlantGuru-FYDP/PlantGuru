@@ -5,15 +5,16 @@ plugins {
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     id("dagger.hilt.android.plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.example.plantgurucompose"
+    namespace = "com.jhamburg.plantgurucompose"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.plantgurucompose"
-        minSdk = 31
+        applicationId = "com.jhamburg.plantgurucompose"
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -31,17 +32,23 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("Boolean", "DEBUG", "false")
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        debug {
+            buildConfigField("Boolean", "DEBUG", "true")
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -65,6 +72,10 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.lifecycle.runtime.compose.android)
     implementation(libs.core.ktx)
+    implementation(libs.androidx.camera.core)
+    implementation(libs.firebase.messaging.ktx)
+    implementation(libs.androidx.hilt.common)
+    implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -112,6 +123,8 @@ dependencies {
     kapt("androidx.hilt:hilt-compiler:1.2.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
     implementation("androidx.core:core-ktx:1.10.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     implementation("androidx.activity:activity-compose:1.7.2")
@@ -126,6 +139,17 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.1")
 
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation("com.patrykandpatrick.vico:compose:1.13.1")
+    implementation("com.patrykandpatrick.vico:compose-m3:1.13.1")
+
+    implementation(platform("androidx.compose:compose-bom:2023.08.00"))
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.5.4")
+
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+    // TODO: Add the dependencies for Firebase products you want to use
+    // When using the BoM, don't specify versions in Firebase dependencies
+    // https://firebase.google.com/docs/android/setup#available-libraries
 }
 
 kapt {

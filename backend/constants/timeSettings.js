@@ -1,14 +1,14 @@
 const TIME_SETTINGS = {
     GRANULARITIES: {
         RAW: 0,
-        MINUTE_5: 5,
-        MINUTE_15: 15,
-        MINUTE_30: 30,
-        HOUR: 60,
-        HOUR_12: 720,
-        DAY: 1440,
-        WEEK: 10080,
-        MONTH: 43200
+        MINUTE_5: 1,
+        MINUTE_15: 5,
+        MINUTE_30: 10,
+        HOUR: 15,
+        HOUR_12: 180,
+        DAY: 360,
+        WEEK: 2520,
+        MONTH: 10800
     },
     TIME_RANGES: {
         HOUR: 1,
@@ -17,15 +17,15 @@ const TIME_SETTINGS = {
         MONTH: 24 * 30
     },
     GRANULARITY_THRESHOLDS: {
-        0: 2,        // Raw data up to 2 hours
-        5: 6,        // 5min granularity up to 6 hours
-        15: 24,      // 15min granularity up to 24 hours
-        30: 48,      // 30min granularity up to 48 hours
-        60: 168,     // 1hour granularity up to 1 week
-        720: 336,    // 12hour granularity up to 2 weeks
-        1440: 720,   // 1day granularity up to 1 month
-        10080: 2160, // 1week granularity up to 3 months
-        43200: 8760  // 1month granularity up to 1 year
+        0: 1,
+        1: 3,
+        5: 12,
+        10: 24,
+        15: 84,
+        180: 168,
+        360: 360,
+        2520: 1080,
+        10800: 4380
     },
     MAX_TIME_RANGE_DAYS: 90,
     DEFAULT_TIME_RANGE: 'DAY'
@@ -35,27 +35,27 @@ const PROJECTION_SETTINGS = {
     TIME_RANGES: {
         HOUR: {
             hours: 1,
-            granularity: 5,  // 5 minutes
+            granularity: 2,  // 2 minutes
             pastHours: 1
         },
         TWELVE_HOURS: {
             hours: 12,
-            granularity: 30, // 30 minutes
+            granularity: 15, // 15 minutes
             pastHours: 12
         },
         DAY: {
             hours: 24,
-            granularity: 30, // 30 minutes
+            granularity: 15, // 15 minutes
             pastHours: 24
         },
         WEEK: {
             hours: 24 * 7,
-            granularity: 720, // 12 hours
+            granularity: 360, // 360 minutes (6 hours)
             pastHours: 24 * 7
         },
         MONTH: {
             hours: 24 * 30,
-            granularity: 1440, // 1 day
+            granularity: 720, // 720 minutes (12 hours)
             pastHours: 24 * 30
         }
     }

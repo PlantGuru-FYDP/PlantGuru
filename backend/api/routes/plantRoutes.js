@@ -1,5 +1,5 @@
 let express = require("express");
-const { plantRead, plantUpload, plantDelete } = require("../controllers/plantController");
+const { plantRead, plantUpload, plantDelete, updatePlant } = require("../controllers/plantController");
 let router = express.Router();
 
 // const { body } = require("express-validator");
@@ -9,5 +9,7 @@ router.post("/plantUpload", plantUpload);
 router.get("/plantRead", plantRead);
 
 router.delete("/deletePlant", plantDelete);
+
+router.put("/updatePlant", updatePlant);
 
 module.exports = router;

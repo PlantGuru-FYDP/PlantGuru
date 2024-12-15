@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "409414654475",
+    "project_id": "plantguru-a57fe",
+    "storage_bucket": "plantguru-a57fe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:409414654475:android:b78be7bd02e8ab1c3c850e",
+        "android_client_info": {
+          "package_name": "com.jhamburg.plantgurucompose"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDDCUJq3pQmNtbOkuzvESKjZawzd2tn-s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

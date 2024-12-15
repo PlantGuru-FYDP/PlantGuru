@@ -239,6 +239,27 @@ class NotificationSettings {
             throw err;
         }
     }
+
+    static async getAllEnabledPlantSettings() {
+        console.log('[getAllEnabledPlantSettings] Fetching all plants with enabled notifications');
+        const cmd = `
+            SELECT pns.*, p.plant_name 
+            FROM PlantNotificationSettings pns
+            INNER JOIN Plants p ON p.plant_id = pns.plant_id
+            LEFT JOIN DeletedPlants dp ON dp.plant_id = p.plant_id
+            WHERE pns.health_status_notifications = true
+            AND dp.plant_id IS NULL
+        `;
+        
+        try {
+            const [rows] = await connection.query(cmd);
+            console.log(`[getAllEnabledPlantSettings] Found ${rows.length} plants with enabled notifications`);
+            return rows;
+        } catch (err) {
+            console.error('[getAllEnabledPlantSettings] Error:', err);
+            throw err;
+        }
+    }
 }
 
 module.exports = NotificationSettings;

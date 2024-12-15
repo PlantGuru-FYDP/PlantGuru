@@ -1,4 +1,4 @@
-package com.example.plantgurucompose
+package com.jhamburg.plantgurucompose
 
 import org.junit.Test
 

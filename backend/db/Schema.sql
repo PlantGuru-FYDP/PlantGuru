@@ -45,6 +45,21 @@ CREATE TABLE SensorData (
     FOREIGN KEY (plant_id) REFERENCES Plants(plant_id) ON DELETE CASCADE
 );
 
+-- Primary time-series index for fast time-based lookups
+CREATE INDEX idx_sensor_plant_time ON SensorData (plant_id, time_stamp DESC);
+
+-- Sensor-specific indexes for analytics queries
+CREATE INDEX idx_sensor_ext_temp ON SensorData (plant_id, ext_temp, time_stamp);
+CREATE INDEX idx_sensor_humidity ON SensorData (plant_id, humidity, time_stamp);
+CREATE INDEX idx_sensor_light ON SensorData (plant_id, light, time_stamp);
+CREATE INDEX idx_sensor_soil_temp ON SensorData (plant_id, soil_temp, time_stamp);
+CREATE INDEX idx_sensor_moisture ON SensorData (plant_id, soil_moisture_1, soil_moisture_2, time_stamp);
+CREATE INDEX idx_sensor_soil_moisture_1 ON SensorData (plant_id, soil_moisture_1, time_stamp);
+CREATE INDEX idx_sensor_soil_moisture_2 ON SensorData (plant_id, soil_moisture_2, time_stamp);
+
+-- Watering events index
+CREATE INDEX idx_watering_plant_time ON WateringEvent (plant_id, time_stamp DESC);
+
 -- Create the WateringEvent table
 CREATE TABLE WateringEvent (
     watering_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -115,4 +130,17 @@ CREATE TABLE PlantNotificationSettings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (plant_id) REFERENCES Plants(plant_id) ON DELETE CASCADE,
     UNIQUE KEY unique_plant_settings (plant_id)
+);
+
+CREATE TABLE DeviceProvisioning (
+    provision_token VARCHAR(36) PRIMARY KEY,
+    user_id INT NOT NULL,
+    plant_id INT NOT NULL,
+    status ENUM('PENDING', 'DEVICE_CONNECTED', 'WIFI_SETUP', 'BACKEND_VERIFIED', 'COMPLETED', 'FAILED') NOT NULL,
+    device_id VARCHAR(36),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id),
+    FOREIGN KEY (plant_id) REFERENCES Plants(plant_id),
+    UNIQUE KEY unique_plant_device (plant_id)
 );

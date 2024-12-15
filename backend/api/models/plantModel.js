@@ -30,7 +30,9 @@ class Plant {
         s.soil_temp,
         s.soil_moisture_1,
         s.soil_moisture_2,
-        DATE_FORMAT(s.time_stamp, '%Y-%m-%dT%H:%i:%s.000Z') as last_sensor_reading
+        DATE_FORMAT(s.time_stamp, '%Y-%m-%dT%H:%i:%s.000Z') as last_sensor_reading,
+        dp.status as provisioning_status,
+        dp.device_id
       FROM Plants p
       LEFT JOIN (
         SELECT s1.*
@@ -43,6 +45,7 @@ class Plant {
         ON s1.plant_id = s2.plant_id AND s1.sensor_id = s2.max_sensor_id
       ) s ON p.plant_id = s.plant_id
       LEFT JOIN DeletedPlants d ON p.plant_id = d.plant_id
+      LEFT JOIN DeviceProvisioning dp ON p.plant_id = dp.plant_id
       WHERE p.user_id = ? AND d.plant_id IS NULL`;
     
     return connection.query(cmd, [user_id]);
@@ -75,6 +78,30 @@ class Plant {
       LEFT JOIN DeletedPlants d ON p.plant_id = d.plant_id
       WHERE p.plant_id = ? AND d.plant_id IS NULL`;
     return connection.query(cmd, [plant_id]);
+  }
+
+  static async updatePlantName(plant_id, new_name) {
+    const cmd = "UPDATE Plants SET plant_name = ? WHERE plant_id = ?";
+    return connection.query(cmd, [new_name, plant_id]);
+  }
+
+  static async updatePlant(plant_id, updates) {
+    const validFields = ['plant_name', 'age', 'last_watered', 'next_watering_time'];
+    const updateFields = [];
+    const updateValues = [];
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (validFields.includes(key) && value !== undefined && value !== null) {
+        updateFields.push(`${key} = ?`);
+        updateValues.push(value);
+      }
+    }
+
+    if (updateFields.length === 0) return;
+
+    updateValues.push(plant_id);
+    const cmd = `UPDATE Plants SET ${updateFields.join(', ')} WHERE plant_id = ?`;
+    return connection.query(cmd, updateValues);
   }
 }
 

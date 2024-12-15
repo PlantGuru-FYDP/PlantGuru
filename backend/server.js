@@ -4,6 +4,7 @@ const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const healthCheckScheduler = require("./api/services/healthCheckSchedulerService");
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -44,5 +45,28 @@ app.use((error, req, res, next) => {
   res.status(statusCode).json({ message });
 });
 
-//Listening to the port
-app.listen(3000, () => console.log("Listening on port 3000"));
+// create server instance
+const server = app.listen(3000, () => {
+  console.log("Listening on port 3000");
+  // Start health check scheduler after server is running
+  healthCheckScheduler.start();
+});
+
+// handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  healthCheckScheduler.stop();
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  healthCheckScheduler.stop();
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});

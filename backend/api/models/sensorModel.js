@@ -68,8 +68,7 @@ class SensorData {
   }
 
   static readLatestData(plant_id) {
-    const cmd =
-      "Select * from SensorData where plant_id = ? ORDER BY time_stamp DESC LIMIT 1";
+    const cmd = "SELECT * FROM SensorData FORCE INDEX (idx_sensor_plant_time) WHERE plant_id = ? ORDER BY time_stamp DESC LIMIT 1";
     return connection.query(cmd, [plant_id]);
   }
 
@@ -100,28 +99,32 @@ class SensorData {
   }
 
   static async getTimeSeriesData(plant_id, start_time, end_time, granularity = 0) {
-    const startDate = new Date(start_time);
-    const endDate = new Date(end_time);
-    
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        throw new Error('Invalid date format');
-    }
-
-    // Convert ISO dates to MySQL format
-    const mysqlStartDate = startDate.toISOString().slice(0, 19).replace('T', ' ');
-    const mysqlEndDate = endDate.toISOString().slice(0, 19).replace('T', ' ');
-
     if (granularity === 0) {
-        const [rawData] = await this.readDataSeries(plant_id, startDate.toISOString(), endDate.toISOString());
-        return rawData.map(row => ({
-            time_period: row.time_stamp,
+        const cmd = `
+            SELECT 
+                time_stamp as time_period,
+                ext_temp,
+                light,
+                humidity,
+                soil_temp,
+                soil_moisture_1,
+                soil_moisture_2,
+                1 as data_points
+            FROM SensorData FORCE INDEX (idx_sensor_plant_time)
+            WHERE plant_id = ? 
+                AND time_stamp >= ? 
+                AND time_stamp <= ?
+            ORDER BY time_stamp ASC`;
+        const [rows] = await connection.query(cmd, [plant_id, start_time, end_time]);
+        return rows.map(row => ({
+            time_period: row.time_period,
             ext_temp: row.ext_temp,
             light: row.light,
             humidity: row.humidity,
             soil_temp: row.soil_temp,
             soil_moisture_1: row.soil_moisture_1,
             soil_moisture_2: row.soil_moisture_2,
-            data_points: 1
+            data_points: row.data_points
         }));
     }
 
@@ -138,7 +141,7 @@ class SensorData {
                         ) MINUTE
                     ),
                     '%Y-%m-%d %H:%i:00'
-                ) as period,
+                ) as time_period,
                 ROUND(AVG(ext_temp), 2) as ext_temp,
                 ROUND(AVG(light), 2) as light,
                 ROUND(AVG(humidity), 2) as humidity,
@@ -146,37 +149,32 @@ class SensorData {
                 ROUND(AVG(soil_moisture_1), 2) as soil_moisture_1,
                 ROUND(AVG(soil_moisture_2), 2) as soil_moisture_2,
                 COUNT(*) as data_points
-            FROM SensorData
+            FROM SensorData FORCE INDEX (idx_sensor_plant_time)
             WHERE plant_id = ?
                 AND time_stamp >= ?
                 AND time_stamp <= ?
-            GROUP BY period
-            ORDER BY period ASC
+            GROUP BY time_period
+            ORDER BY time_period ASC
         )
-        SELECT 
-            period as time_period,
-            ext_temp,
-            light,
-            humidity,
-            soil_temp,
-            soil_moisture_1,
-            soil_moisture_2,
-            data_points
-        FROM sensor_data
-    `;
+        SELECT * FROM sensor_data`;
 
-    try {
-        const [results] = await connection.query(cmd, [
-            granularity,
-            plant_id,
-            mysqlStartDate,
-            mysqlEndDate
-        ]);
-        return results;
-    } catch (error) {
-        console.error("DEBUG: Query error:", error);
-        throw error;
-    }
+    const [rows] = await connection.query(cmd, [
+        granularity,
+        plant_id,
+        start_time,
+        end_time
+    ]);
+    
+    return rows.map(row => ({
+        time_period: row.time_period,
+        ext_temp: row.ext_temp,
+        light: row.light,
+        humidity: row.humidity,
+        soil_temp: row.soil_temp,
+        soil_moisture_1: row.soil_moisture_1,
+        soil_moisture_2: row.soil_moisture_2,
+        data_points: row.data_points
+    }));
   }
 
   static async getAnalysis(plant_id, start_time, end_time, metrics = ['min', 'max', 'avg']) {
@@ -210,30 +208,33 @@ class SensorData {
       throw new Error('Invalid sensor type');
     }
 
-    let whereClause = 'WHERE plant_id = ? AND time_stamp >= ? AND time_stamp <= ?';
-    let params = [plant_id, start_time, end_time];
-
-    if (options.removeOutliers) {
-      whereClause += ` AND ${sensor_type} BETWEEN 
-        (SELECT AVG(${sensor_type}) - 2 * STDDEV(${sensor_type}) 
-         FROM SensorData WHERE plant_id = ? AND time_stamp >= ? AND time_stamp <= ?)
-        AND 
-        (SELECT AVG(${sensor_type}) + 2 * STDDEV(${sensor_type})
-         FROM SensorData WHERE plant_id = ? AND time_stamp >= ? AND time_stamp <= ?)`;
-      params = [...params, plant_id, start_time, end_time, plant_id, start_time, end_time];
-    }
-
-    const cmd = `
+    const indexHint = `FORCE INDEX (idx_sensor_${sensor_type.replace('_', '_')})`;
+    
+    let cmd = `
+      WITH stats AS (
+        SELECT 
+          ${sensor_type},
+          AVG(${sensor_type}) OVER () as avg_value,
+          STDDEV(${sensor_type}) OVER () as std_dev
+        FROM SensorData ${indexHint}
+        WHERE plant_id = ? 
+          AND time_stamp >= ? 
+          AND time_stamp <= ?
+      )
       SELECT 
         MIN(${sensor_type}) as min_value,
         MAX(${sensor_type}) as max_value,
         AVG(${sensor_type}) as avg_value,
         COUNT(*) as total_readings
-      FROM SensorData
-      ${whereClause}
-    `;
+      FROM stats
+      ${options.removeOutliers ? 
+        `WHERE ${sensor_type} BETWEEN 
+          (SELECT avg_value - 2 * std_dev FROM stats LIMIT 1)
+          AND 
+          (SELECT avg_value + 2 * std_dev FROM stats LIMIT 1)` 
+        : ''}`;
 
-    return connection.query(cmd, params);
+    return connection.query(cmd, [plant_id, start_time, end_time]);
   }
 
   static async getSensorTrendline(plant_id, sensor_type, start_time, end_time) {

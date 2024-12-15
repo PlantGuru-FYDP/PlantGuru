@@ -7,7 +7,7 @@ const calculateSensorHealth = (value, optimalRanges) => {
   
   const { min, max, criticalMin, criticalMax } = optimalRanges;
   
-  if (value <= criticalMin || value >= criticalMax) return 'CRITICAL';
+  if (value < criticalMin || value > criticalMax) return 'CRITICAL';
   if (value < min) return 'WARNING_LOW';
   if (value > max) return 'WARNING_HIGH';
   return 'GOOD';
@@ -15,6 +15,7 @@ const calculateSensorHealth = (value, optimalRanges) => {
 
 const OPTIMAL_RANGES = {
   ext_temp: {
+    name: 'Ext Temp',
     criticalMin: 0,
     min: 15,
     max: 30,
@@ -22,13 +23,15 @@ const OPTIMAL_RANGES = {
     unit: '°C'
   },
   light: {
-    criticalMin: 0,
-    min: 1000,
-    max: 10000,
-    criticalMax: 15000,
-    unit: 'lux'
+    name: 'Light',
+    criticalMin: 20,
+    min: 50,
+    max: 100,
+    criticalMax: 100,
+    unit: '%'
   },
   humidity: {
+    name: 'Humidity',
     criticalMin: 20,
     min: 40,
     max: 70,
@@ -36,6 +39,7 @@ const OPTIMAL_RANGES = {
     unit: '%'
   },
   soil_temp: {
+    name: 'Soil Temp',
     criticalMin: 5,
     min: 15,
     max: 25,
@@ -43,6 +47,7 @@ const OPTIMAL_RANGES = {
     unit: '°C'
   },
   soil_moisture_1: {
+    name: 'Soil Moisture 1',
     criticalMin: 10,
     min: 30,
     max: 70,
@@ -50,6 +55,7 @@ const OPTIMAL_RANGES = {
     unit: '%'
   },
   soil_moisture_2: {
+    name: 'Soil Moisture 2',
     criticalMin: 10,
     min: 30,
     max: 70,
@@ -85,13 +91,19 @@ function getSeason(date) {
   function getAdjustedRanges(baseRanges, hour, season) {
     const ranges = { ...baseRanges };
     
-    if (ranges.unit === 'lux') {
-      if (hour < 6 || hour > 20) { 
+    if (ranges.name === 'Light') {
+      const estHour = hour;
+      
+      if (estHour >= 20 || estHour < 6) { 
+        ranges.criticalMin = 0;
         ranges.min = 0;
         ranges.max = 100;
-      } else if (hour < 8 || hour > 18) {
-        ranges.min = ranges.min * 0.3;
-        ranges.max = ranges.max * 0.3;
+        ranges.criticalMax = 100;
+      } else if (estHour < 8 || estHour >= 18) {
+        ranges.criticalMin = 0;
+        ranges.min = 10;
+        ranges.max = 100;
+        ranges.criticalMax = 100;
       }
     }
   
@@ -120,20 +132,20 @@ function getSeason(date) {
   
     const avgValue = stats.reduce((sum, reading) => sum + reading.avg_value, 0) / stats.length;
     const outOfRangeCount = stats.filter(reading => 
-      reading.avg_value < reading.optimal_min || 
-      reading.avg_value > reading.optimal_max
+      reading.avg_value < ranges.min || 
+      reading.avg_value > ranges.max
     ).length;
     
     const outOfRangePercentage = (outOfRangeCount / stats.length) * 100;
   
-    if (outOfRangePercentage > 70) {
+    if (outOfRangePercentage > 50) {
       result.consistent_issue = true;
       result.severity = 'HIGH';
-      result.type = avgValue < stats[0].optimal_min ? 'LOW' : 'HIGH';
-    } else if (outOfRangePercentage > 30) {
+      result.type = avgValue < ranges.min ? 'LOW' : 'HIGH';
+    } else if (outOfRangePercentage > 25) {
       result.consistent_issue = true;
       result.severity = 'MEDIUM';
-      result.type = avgValue < stats[0].optimal_min ? 'LOW' : 'HIGH';
+      result.type = avgValue < ranges.min ? 'LOW' : 'HIGH';
     }
   
     return result;
@@ -305,61 +317,122 @@ function getSeason(date) {
       details: `Watered with ${event.volume}ml for ${event.watering_duration}s`
     })) || [];
   }
+
+function generateImmediateRecommendation(sensor_type, health, value) {
+    const recommendations = {
+      ext_temp: {
+        WARNING_HIGH: "Temperature is currently high, consider temporary cooling measures",
+        WARNING_LOW: "Temperature is currently low, consider temporary warming measures",
+        CRITICAL: "Temperature is at critical levels, immediate action required"
+      },
+      light: {
+        WARNING_HIGH: "Light levels are too intense, consider adding shade",
+        WARNING_LOW: "Light levels are too low, consider moving to a brighter location", 
+        CRITICAL: "Light levels are at critical levels, immediate action required"
+      },
+      humidity: {
+        WARNING_HIGH: "Humidity is too high, increase ventilation",
+        WARNING_LOW: "Humidity is too low, consider misting or using a humidifier",
+        CRITICAL: "Humidity is at critical levels, immediate action required"
+      },
+      soil_moisture_1: {
+        WARNING_HIGH: "Soil is too wet, hold off on watering",
+        WARNING_LOW: "Soil is getting dry, water soon",
+        CRITICAL: "Soil moisture is at critical levels, immediate action required"
+      },
+      soil_moisture_2: {
+        WARNING_HIGH: "Soil is too wet, hold off on watering",
+        WARNING_LOW: "Soil is getting dry, water soon", 
+        CRITICAL: "Soil moisture is at critical levels, immediate action required"
+      }
+    };
+  
+    return recommendations[sensor_type]?.[health] || "Monitor current conditions";
+  }
   
 
-exports.getSensorHealth = async (req, res) => {
-  try {
-    const { plant_id, sensor_type } = req.query;
-    await validatePlantId(plant_id);
-    
-    if (!OPTIMAL_RANGES[sensor_type]) {
-      throw new Error(`Invalid sensor type: ${sensor_type}`);
-    }
-
-    const latestData = await getValidatedSensorData(plant_id);
-    const currentValue = latestData[sensor_type];
-    
-    const currentTime = new Date(latestData.time_stamp);
-    const hour = currentTime.getHours();
-    const season = getSeason(currentTime);
-    
-    const adjustedRanges = getAdjustedRanges(OPTIMAL_RANGES[sensor_type], hour, season);
-    const health = calculateSensorHealth(currentValue, adjustedRanges);
-
-    const endTime = new Date();
-    const startTime = new Date(endTime - 3 * 60 * 60 * 1000);
-    const [historicalData] = await SensorData.getSensorStats(
-      plant_id,
-      sensor_type,
-      startTime.toISOString(),
-      endTime.toISOString(),
-      { removeOutliers: true }
-    );
-
-    return res.status(200).send({
-      status: health,
+const createGoodStatusResponse = (sensor_type, plant_id, timestamp = new Date().toISOString(), value = 0, ranges = null) => {
+  const defaultRanges = { min: 0, max: 100, unit: 'unknown' };
+  const sensorRanges = ranges || OPTIMAL_RANGES[sensor_type] || defaultRanges;
+  
+  return {
+    immediate_status: {
+      status: "GOOD",
       current_value: {
-        value: currentValue,
-        unit: OPTIMAL_RANGES[sensor_type].unit,
-        timestamp: latestData.time_stamp
+        value,
+        unit: sensorRanges.unit,
+        timestamp
       },
       optimal_range: {
-        min: adjustedRanges.min,
-        max: adjustedRanges.max,
-        unit: OPTIMAL_RANGES[sensor_type].unit
+        min: sensorRanges.min,
+        max: sensorRanges.max,
+        unit: sensorRanges.unit
+      }
+    },
+    sensor_type,
+    plant_id
+  };
+};
+
+exports.getSensorHealth = async (req, res) => {
+  const { plant_id, sensor_type } = req.query;
+  
+  try {
+    try {
+      await validatePlantId(plant_id);
+    } catch (err) {
+      return res.status(200).send(createGoodStatusResponse(sensor_type, plant_id));
+    }
+
+    if (!OPTIMAL_RANGES[sensor_type]) {
+      return res.status(200).send(createGoodStatusResponse(sensor_type, plant_id));
+    }
+
+    let latestData;
+    try {
+      latestData = await getValidatedSensorData(plant_id);
+    } catch (err) {
+      return res.status(200).send(createGoodStatusResponse(sensor_type, plant_id, new Date().toISOString(), 0, OPTIMAL_RANGES[sensor_type]));
+    }
+
+    const currentValue = latestData[sensor_type];
+    const currentTime = new Date(latestData.time_stamp);
+    
+    const estDate = new Date(currentTime.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const utcDate = new Date(currentTime.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const offset = utcDate - estDate;
+    
+    const adjustedEstTime = new Date(currentTime.getTime() - offset);
+    const estHour = adjustedEstTime.getHours();
+    
+    const adjustedRanges = getAdjustedRanges(
+      OPTIMAL_RANGES[sensor_type], 
+      estHour,
+      getSeason(adjustedEstTime)
+    );
+    
+    const currentHealth = calculateSensorHealth(currentValue, adjustedRanges);
+
+    return res.status(200).send({
+      immediate_status: {
+        status: currentHealth,
+        current_value: {
+          value: currentValue,
+          unit: OPTIMAL_RANGES[sensor_type].unit,
+          timestamp: latestData.time_stamp
+        },
+        optimal_range: {
+          min: adjustedRanges.min,
+          max: adjustedRanges.max,
+          unit: OPTIMAL_RANGES[sensor_type].unit
+        }
       },
-      historical_context: {
-        min: historicalData.min_value,
-        max: historicalData.max_value,
-        avg: historicalData.avg_value,
-        readings: historicalData.total_readings
-      },
-      sensor_type: sensor_type,
-      plant_id: plant_id
+      sensor_type,
+      plant_id
     });
   } catch (err) {
     console.error('Error in getSensorHealth:', err);
-    return res.status(500).send({ message: err.message });
+    return res.status(200).send(createGoodStatusResponse(sensor_type, plant_id));
   }
 };
 
@@ -369,27 +442,49 @@ exports.getPlantRecommendations = async (req, res) => {
     await validatePlantId(plant_id);
     
     const endTime = new Date();
-    const startTime = new Date(endTime - 7 * 24 * 60 * 60 * 1000);
+    const startTime = new Date(endTime - 24 * 60 * 60 * 1000);
     
-    const recommendations = [];
+    const currentIssues = [];
+    const longTermIssues = [];
     
+    const latestData = await getValidatedSensorData(plant_id);
+    const currentTime = new Date(latestData.time_stamp);
+    const season = getSeason(currentTime);
+    const hour = currentTime.getHours();
+
     for (const [sensor, ranges] of Object.entries(OPTIMAL_RANGES)) {
-      const [stats] = await SensorData.getSensorStats(
-        plant_id,
-        sensor,
-        startTime.toISOString(),
-        endTime.toISOString(),
-        { granularity: 'day' }
-      );
-      
-      const dailyPatterns = await analyzeDailyPatterns(stats, ranges);
-      
-      if (dailyPatterns.consistent_issue) {
-        recommendations.push({
+      const currentValue = latestData[sensor];
+      const adjustedRanges = getAdjustedRanges(ranges, hour, season);
+      const currentHealth = calculateSensorHealth(currentValue, adjustedRanges);
+
+      if (currentHealth !== 'GOOD') {
+        currentIssues.push({
           type: sensor.toUpperCase(),
-          priority: dailyPatterns.severity,
-          message: generateRecommendation(sensor, dailyPatterns)
+          status: currentHealth,
+          value: currentValue,
+          message: generateImmediateRecommendation(sensor, currentHealth, currentValue)
         });
+      }
+
+      if (currentHealth !== 'GOOD') {
+        const [stats] = await SensorData.getSensorStats(
+          plant_id,
+          sensor,
+          startTime.toISOString(),
+          endTime.toISOString(),
+          { granularity: 'hour' }
+        );
+        
+        const dailyPatterns = await analyzeDailyPatterns(stats, ranges);
+        
+        if (dailyPatterns.consistent_issue) {
+          longTermIssues.push({
+            type: sensor.toUpperCase(),
+            priority: dailyPatterns.severity,
+            pattern_type: dailyPatterns.type,
+            message: generateRecommendation(sensor, dailyPatterns)
+          });
+        }
       }
     }
     
@@ -401,7 +496,7 @@ exports.getPlantRecommendations = async (req, res) => {
     
     const wateringPattern = await analyzeWateringPattern(wateringHistory);
     if (wateringPattern.needs_adjustment) {
-      recommendations.push({
+      longTermIssues.push({
         type: 'WATERING',
         priority: wateringPattern.priority,
         message: wateringPattern.recommendation
@@ -411,7 +506,8 @@ exports.getPlantRecommendations = async (req, res) => {
     return res.status(200).send({
       plant_id: plant_id,
       timestamp: new Date().toISOString(),
-      recommendations: recommendations,
+      current_issues: currentIssues,
+      long_term_issues: longTermIssues,
       last_watering: wateringHistory[0] || null
     });
   } catch (err) {
@@ -419,6 +515,7 @@ exports.getPlantRecommendations = async (req, res) => {
     return res.status(500).send({ message: err.message });
   }
 };
+
 
 exports.getHealthDiagnostics = async (req, res) => {
   try {

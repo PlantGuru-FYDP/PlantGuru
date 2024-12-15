@@ -58,7 +58,7 @@ exports.getProjections = async (req, res) => {
             projections.push({
                 value: projectedValue,
                 timestamp: currentTime.toISOString(),
-                confidence: Math.max(0.95 - (i * 0.02), 0.5)
+                confidence: 1 - (i / adjustedNumPoints)
             });
             currentTime = new Date(currentTime.getTime() + intervalMs);
         }
