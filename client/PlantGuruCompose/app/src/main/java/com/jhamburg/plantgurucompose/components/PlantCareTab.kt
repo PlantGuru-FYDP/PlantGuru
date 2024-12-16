@@ -70,7 +70,9 @@ fun PlantCareTab(
     var healthDiagnostics by remember { mutableStateOf<Result<HealthDiagnosticsResponse>?>(null) }
 
     LaunchedEffect(plant?.plantId) {
+        println("PlantCareTab: LaunchedEffect triggered with plantId: ${plant?.plantId}")
         plant?.plantId?.let { plantId ->
+            println("PlantCareTab: Fetching data for plant $plantId")
             insightsViewModel.getCareSchedule(plantId)
             insightsViewModel.getPlantRecommendations(plantId)
             insightsViewModel.getHealthDiagnostics(plantId)
@@ -78,14 +80,24 @@ fun PlantCareTab(
     }
 
     LaunchedEffect(Unit) {
+        println("PlantCareTab: Starting state collection")
         launch {
-            insightsViewModel.careSchedule.collect { careSchedule = it }
+            insightsViewModel.careSchedule.collect { 
+                println("PlantCareTab: Received careSchedule update: $it")
+                careSchedule = it 
+            }
         }
         launch {
-            insightsViewModel.recommendations.collect { recommendations = it }
+            insightsViewModel.recommendations.collect { 
+                println("PlantCareTab: Received recommendations update: $it")
+                recommendations = it 
+            }
         }
         launch {
-            insightsViewModel.healthDiagnostics.collect { healthDiagnostics = it }
+            insightsViewModel.healthDiagnostics.collect { 
+                println("PlantCareTab: Received healthDiagnostics update: $it")
+                healthDiagnostics = it 
+            }
         }
     }
 
@@ -125,9 +137,17 @@ fun PlantCareTab(
                 shape = RoundedCornerShape(24.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
+                println("PlantCareTab: Rendering recommendations card with data: ${recommendations?.getOrNull()}")
                 recommendations?.getOrNull()?.let { response ->
-                    RecommendationsCard(response.current_issues)
-                } ?: LoadingCard("Care Recommendations")
+                    println("PlantCareTab: Unwrapped recommendations data: current_issues=${response.current_issues.size}, long_term_issues=${response.long_term_issues.size}")
+                    RecommendationsCard(
+                        currentIssues = response.current_issues,
+                        longTermIssues = response.long_term_issues
+                    )
+                } ?: run {
+                    println("PlantCareTab: Showing loading state for recommendations")
+                    LoadingCard("Care Recommendations")
+                }
             }
         }
     }
@@ -217,27 +237,42 @@ private fun HealthScoreCard(health: HealthDiagnosticsResponse) {
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SensorStatusMetric(
-                label = "Temperature",
-                value = health.latest_readings.temperature,
-                unit = "°C",
-                status = health.sensor_health["ext_temp"] ?: "UNKNOWN",
-                icon = R.drawable.baseline_device_thermostat_24
-            )
-            SensorStatusMetric(
-                label = "Humidity",
-                value = health.latest_readings.humidity,
-                unit = "%",
-                status = health.sensor_health["humidity"] ?: "UNKNOWN",
-                icon = R.drawable.baseline_water_24
-            )
-            SensorStatusMetric(
-                label = "Soil Moisture",
-                value = health.latest_readings.soil_moisture,
-                unit = "%",
-                status = health.sensor_health["soil_moisture_1"] ?: "UNKNOWN",
-                icon = R.drawable.baseline_grass_24
-            )
+            health.latest_readings?.temperature?.let { reading ->
+                SensorStatusMetric(
+                    label = "Temperature",
+                    value = reading.value,
+                    unit = "°C",
+                    status = reading.status,
+                    icon = R.drawable.baseline_device_thermostat_24
+                )
+            }
+            health.latest_readings?.humidity?.let { reading ->
+                SensorStatusMetric(
+                    label = "Humidity",
+                    value = reading.value,
+                    unit = "%",
+                    status = reading.status,
+                    icon = R.drawable.baseline_water_24
+                )
+            }
+            health.latest_readings?.soil_moisture?.let { reading ->
+                SensorStatusMetric(
+                    label = "Soil Moisture",
+                    value = reading.value,
+                    unit = "%",
+                    status = reading.status,
+                    icon = R.drawable.baseline_grass_24
+                )
+            }
+            health.latest_readings?.light?.let { reading ->
+                SensorStatusMetric(
+                    label = "Light",
+                    value = reading.value,
+                    unit = "%",
+                    status = reading.status,
+                    icon = R.drawable.baseline_sunny_24
+                )
+            }
         }
     }
 }
@@ -316,26 +351,42 @@ private fun SensorStatusMetric(
 
 @Composable
 private fun CareScheduleCard(schedule: CareScheduleResponse) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    Column(
+        modifier = Modifier
+            .padding(24.dp)
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .padding(24.dp)
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                "Care Schedule",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = LogoFont,
-                    fontWeight = FontWeight.Bold
-                )
+        Text(
+            "Care Schedule",
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontFamily = LogoFont,
+                fontWeight = FontWeight.Bold
             )
+        )
 
-            if (schedule.next_actions.isEmpty() || schedule.next_actions.all { it.due_in_hours == null }) {
+        if (schedule.next_actions.isEmpty()) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "No scheduled actions at this time",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            schedule.next_actions.forEach { action ->
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -345,62 +396,38 @@ private fun CareScheduleCard(schedule: CareScheduleResponse) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        horizontalArrangement = Arrangement.Center,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            "No scheduled actions at this time",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            } else {
-                schedule.next_actions.forEach { action ->
-                    if (action.due_in_hours != null) {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(16.dp)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        painter = painterResource(
-                                            when (action.type) {
-                                                "WATERING" -> R.drawable.baseline_water_24
-                                                "MISTING" -> R.drawable.baseline_water_24
-                                                else -> R.drawable.baseline_warning_24
-                                            }
-                                        ),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Text(action.details)
-                                }
-                                AssistChip(
-                                    onClick = { },
-                                    label = {
-                                        Text(
-                                            when {
-                                                action.due_in_hours == 0 -> "Due now"
-                                                action.due_in_hours < 24 -> "In ${action.due_in_hours}h"
-                                                else -> "In ${action.due_in_hours / 24}d"
-                                            }
-                                        )
+                            Icon(
+                                painter = painterResource(
+                                    when (action.type) {
+                                        "WATERING" -> R.drawable.baseline_water_24
+                                        "MISTING" -> R.drawable.baseline_water_24
+                                        else -> R.drawable.baseline_warning_24
+                                    }
+                                ),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(action.details)
+                        }
+                        AssistChip(
+                            onClick = { },
+                            label = {
+                                Text(
+                                    when {
+                                        action.due_in_hours == 0 -> "Due now"
+                                        action.due_in_hours < 24 -> "In ${action.due_in_hours}h"
+                                        else -> "In ${action.due_in_hours / 24}d"
                                     }
                                 )
                             }
-                        }
+                        )
                     }
                 }
             }
@@ -409,7 +436,12 @@ private fun CareScheduleCard(schedule: CareScheduleResponse) {
 }
 
 @Composable
-private fun RecommendationsCard(recommendations: List<Issue>) {
+private fun RecommendationsCard(
+    currentIssues: List<Issue>,
+    longTermIssues: List<Issue>
+) {
+    println("RecommendationsCard: Rendering with currentIssues: ${currentIssues.size}, longTermIssues: ${longTermIssues.size}")
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -434,70 +466,143 @@ private fun RecommendationsCard(recommendations: List<Issue>) {
                 )
             )
 
-            val sortedRecs = recommendations.sortedBy {
-                when (it.priority) {
-                    "HIGH" -> 0
-                    "MEDIUM" -> 1
-                    else -> 2
-                }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                sortedRecs.forEach { rec ->
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = when (rec.priority) {
-                            "HIGH" -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.08f)
-                            "MEDIUM" -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        },
-                        shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = when (rec.priority) {
-                                "HIGH" -> MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
-                                else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
-                            }
-                        )
+            if (currentIssues.isEmpty() && longTermIssues.isEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(
-                                    when (rec.type) {
-                                        "SOIL_MOISTURE_1", "SOIL_MOISTURE_2" -> R.drawable.baseline_water_24
-                                        "EXT_TEMP" -> R.drawable.baseline_device_thermostat_24
-                                        "LIGHT" -> R.drawable.baseline_sunny_24
-                                        else -> R.drawable.baseline_warning_24
-                                    }
-                                ),
-                                contentDescription = null,
-                                tint = when (rec.priority) {
-                                    "HIGH" -> MaterialTheme.colorScheme.error
-                                    else -> MaterialTheme.colorScheme.primary
+                        Text(
+                            "No issues detected",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    currentIssues.forEach { issue ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = when (issue.priority) {
+                                "HIGH" -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.08f)
+                                "MEDIUM" -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = when (issue.priority) {
+                                    "HIGH" -> MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
+                                    else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
                                 }
                             )
-                            Text(
-                                rec.message.ifEmpty { getDefaultMessage(rec.type) },
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (rec.priority == "HIGH") {
-                                AssistChip(
-                                    onClick = { },
-                                    label = { Text("Urgent") },
-                                    colors = AssistChipDefaults.assistChipColors(
-                                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(
-                                            alpha = 0.2f
-                                        ),
-                                        labelColor = MaterialTheme.colorScheme.error
-                                    )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(
+                                        when (issue.type) {
+                                            "SOIL_MOISTURE_1", "SOIL_MOISTURE_2" -> R.drawable.baseline_water_24
+                                            "EXT_TEMP" -> R.drawable.baseline_device_thermostat_24
+                                            "LIGHT" -> R.drawable.baseline_sunny_24
+                                            else -> R.drawable.baseline_warning_24
+                                        }
+                                    ),
+                                    contentDescription = null,
+                                    tint = when (issue.priority) {
+                                        "HIGH" -> MaterialTheme.colorScheme.error
+                                        else -> MaterialTheme.colorScheme.primary
+                                    }
                                 )
+                                Text(
+                                    issue.message.ifEmpty { getDefaultMessage(issue.type) },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (issue.priority == "HIGH") {
+                                    AssistChip(
+                                        onClick = { },
+                                        label = { Text("Urgent") },
+                                        colors = AssistChipDefaults.assistChipColors(
+                                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(
+                                                alpha = 0.2f
+                                            ),
+                                            labelColor = MaterialTheme.colorScheme.error
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    longTermIssues.forEach { issue ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = when (issue.priority) {
+                                "HIGH" -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.08f)
+                                "MEDIUM" -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = when (issue.priority) {
+                                    "HIGH" -> MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
+                                    else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                                }
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(
+                                        when (issue.type) {
+                                            "SOIL_MOISTURE_1", "SOIL_MOISTURE_2" -> R.drawable.baseline_water_24
+                                            "EXT_TEMP" -> R.drawable.baseline_device_thermostat_24
+                                            "LIGHT" -> R.drawable.baseline_sunny_24
+                                            else -> R.drawable.baseline_warning_24
+                                        }
+                                    ),
+                                    contentDescription = null,
+                                    tint = when (issue.priority) {
+                                        "HIGH" -> MaterialTheme.colorScheme.error
+                                        else -> MaterialTheme.colorScheme.primary
+                                    }
+                                )
+                                Text(
+                                    issue.message.ifEmpty { getDefaultMessage(issue.type) },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (issue.priority == "HIGH") {
+                                    AssistChip(
+                                        onClick = { },
+                                        label = { Text("Urgent") },
+                                        colors = AssistChipDefaults.assistChipColors(
+                                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(
+                                                alpha = 0.2f
+                                            ),
+                                            labelColor = MaterialTheme.colorScheme.error
+                                        )
+                                    )
+                                }
                             }
                         }
                     }

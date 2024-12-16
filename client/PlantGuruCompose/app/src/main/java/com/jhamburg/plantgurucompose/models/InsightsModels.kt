@@ -52,7 +52,7 @@ data class Recommendation(
 data class Issue(
     val type: String,
     val status: String,
-    val value: Int,
+    val value: Double,
     val message: String,
     val priority: String?,
 )
@@ -60,11 +60,19 @@ data class Issue(
 data class HealthDiagnosticsResponse(
     val overall_health: String,
     val health_score: Int,
-    val stress_indicators: StressIndicators,
-    val sensor_health: Map<String, String>,
-    val alerts: List<Alert>,
-    val timestamp: String,
-    val latest_readings: LatestReadings
+    val latest_readings: LatestReadings?
+)
+
+data class LatestReadings(
+    val temperature: SensorReading?,
+    val humidity: SensorReading?,
+    val soil_moisture: SensorReading?,
+    val light: SensorReading?
+)
+
+data class SensorReading(
+    val value: Double,
+    val status: String
 )
 
 data class StressIndicators(
@@ -78,13 +86,6 @@ data class Alert(
     val type: String,
     val severity: String,
     val message: String
-)
-
-data class LatestReadings(
-    val temperature: Double,
-    val humidity: Double,
-    val light: Double,
-    val soil_moisture: Double
 )
 
 data class CareScheduleResponse(

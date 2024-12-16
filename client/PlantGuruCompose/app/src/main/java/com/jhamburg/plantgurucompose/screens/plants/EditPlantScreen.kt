@@ -293,41 +293,37 @@ fun EditPlantScreen(
                         if (validateInputs() && !isSaving) {
                             hasValidationErrors = false
                             isSaving = true
-                            Log.d("EditPlantScreen", "Starting save process")
+                            Log.d("EditPlantScreen", """
+                                Save initiated:
+                                - Original name: $originalPlantName
+                                - New name: $plantName
+                                - Plant ID: $plantId
+                            """.trimIndent())
                             
                             scope.launch {
                                 try {
-                                    if (plantName.trim() != originalPlantName) {
-                                        Log.d("EditPlantScreen", "Updating plant name")
+                                    val nameChanged = plantName.trim() != originalPlantName
+                                    
+                                    if (nameChanged) {
+                                        Log.d("EditPlantScreen", """
+                                            Starting name update:
+                                            - Original name: $originalPlantName
+                                            - New name: $plantName
+                                            - Plant ID: $plantId
+                                        """.trimIndent())
+                                        
                                         plantViewModel.updatePlant(
                                             plantId = plantId,
                                             plantName = plantName.trim()
                                         )
+                                        
+                                        Log.d("EditPlantScreen", "Name update completed")
                                     }
-                 
-                                    selectedCategory?.let { category ->
-                                        selectedSubType?.let { subType ->
-                                            Log.d("EditPlantScreen", "Saving plant details")
-                                            plantViewModel.savePlantAdditionalDetails(
-                                                plantId,
-                                                PlantAdditionalDetails.fromCategoryAndSubType(
-                                                    category = category,
-                                                    subType = subType,
-                                                    createdOn = currentDetails?.createdOn 
-                                                        ?: System.currentTimeMillis(),
-                                                    imageUri = imageUri?.toString()
-                                                )
-                                            )
-                                        }
-                                    }
-                                    
-                                    Log.d("EditPlantScreen", "All save operations completed successfully")
 
                                     navController.previousBackStackEntry
                                         ?.savedStateHandle
                                         ?.set("refresh", true)
                                     navController.navigateUp()
-                                    
                                 } catch (e: Exception) {
                                     Log.e("EditPlantScreen", "Error saving changes: ${e.message}")
                                     hasValidationErrors = true

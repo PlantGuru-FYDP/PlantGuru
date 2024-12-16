@@ -39,7 +39,7 @@ class ProjectionsViewModel @Inject constructor(
                 _state.update { it.copy(loadingState = LoadingState.Loading) }
                 
                 val endTime = LocalDateTime.now(ZoneId.of("UTC"))
-                val startTime = endTime.minusHours(24)
+                val startTime = endTime.minusMinutes((numPoints * granularityMinutes).toLong())
 
                 val historical = sensorDataRepository.getTimeSeriesData(
                     plantId,

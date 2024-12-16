@@ -217,9 +217,10 @@ function getSeason(date) {
   }
   
   async function calculateWateringSchedule(plant_id, plantType) {
-    const latestData = await SensorData.readLatestData(plant_id);
-
-    const currentMoisture = (latestData?.[0]?.soil_moisture_1 + latestData?.[0]?.soil_moisture_2) / 2;
+    const latestData = await getValidatedSensorData(plant_id);
+    
+    const currentMoisture = latestData ? 
+      (latestData.soil_moisture_1 + latestData.soil_moisture_2) / 2 : null;
     
     const moistureThresholds = {
       'FERN': { min: 60, optimal: 70 },
@@ -228,13 +229,21 @@ function getSeason(date) {
     };
     
     const threshold = moistureThresholds[plantType] || moistureThresholds.DEFAULT;
+    
+    if (currentMoisture === null) {
+      return {
+        next_in_hours: 0,
+        priority: "MEDIUM",
+        details: `Water when soil moisture drops below ${threshold.min}%`
+      };
+    }
 
     const moistureLossRate = await estimateMoistureLossRate(plant_id);
     const hoursUntilWatering = Math.max(
       0,
       Math.round((currentMoisture - threshold.min) / moistureLossRate)
     );
-  
+
     return {
       next_in_hours: hoursUntilWatering,
       priority: hoursUntilWatering < 12 ? 'HIGH' : 'MEDIUM',
@@ -282,9 +291,9 @@ function getSeason(date) {
   }
   
   async function getLatestReadings(plant_id) {
-    const latestData = await SensorData.readLatestData(plant_id);
+    const latestData = await getValidatedSensorData(plant_id);
     
-    if (!latestData?.[0]) {
+    if (!latestData) {
       return {
         temperature: null,
         humidity: null,
@@ -294,10 +303,10 @@ function getSeason(date) {
     }
   
     return {
-      temperature: latestData[0].ext_temp,
-      humidity: latestData[0].humidity,
-      light: latestData[0].light,
-      soil_moisture: (latestData[0].soil_moisture_1 + latestData[0].soil_moisture_2) / 2
+      temperature: latestData.ext_temp,
+      humidity: latestData.humidity,
+      light: latestData.light,
+      soil_moisture: (latestData.soil_moisture_1 + latestData.soil_moisture_2) / 2
     };
   }
   
@@ -373,6 +382,82 @@ const createGoodStatusResponse = (sensor_type, plant_id, timestamp = new Date().
     plant_id
   };
 };
+
+async function getSensorHealthStatuses(latestData) {
+  if (!latestData) return null;
+  
+  return {
+    temperature: latestData.ext_temp != null ? 
+      calculateSensorHealth(latestData.ext_temp, OPTIMAL_RANGES.ext_temp) : null,
+    humidity: latestData.humidity != null ? 
+      calculateSensorHealth(latestData.humidity, OPTIMAL_RANGES.humidity) : null,
+    soil_moisture: latestData.soil_moisture_1 != null ? 
+      calculateSensorHealth(latestData.soil_moisture_1, OPTIMAL_RANGES.soil_moisture_1) : null,
+    light: latestData.light != null ? 
+      calculateSensorHealth(latestData.light, OPTIMAL_RANGES.light) : null
+  };
+}
+
+function calculateOverallHealth(sensorStatuses) {
+  if (!sensorStatuses) {
+    return { health: 'UNKNOWN', score: 0 };
+  }
+
+  let totalPoints = 0;
+  let totalSensors = 0;
+
+  Object.entries(sensorStatuses).forEach(([sensor, status]) => {
+    if (status !== null && status !== 'UNKNOWN') {
+      totalSensors++;
+      if (status === 'GOOD') {
+        totalPoints += 2;
+      } else if (status === 'WARNING_HIGH' || status === 'WARNING_LOW') {
+        totalPoints += 1;
+      }
+      // CRITICAL gets 0 points
+    }
+  });
+
+  if (totalSensors === 0) {
+    return { health: 'UNKNOWN', score: 0 };
+  }
+
+  const score = Math.round((totalPoints / (totalSensors * 2)) * 100);
+  return { 
+    health: mapScoreToHealth(score), 
+    score 
+  };
+}
+
+function formatSensorReadings(latestData, sensorStatuses) {
+  if (!latestData || !sensorStatuses) {
+    return {
+      temperature: null,
+      humidity: null,
+      soil_moisture: null,
+      light: null
+    };
+  }
+
+  return {
+    temperature: latestData.ext_temp != null ? {
+      value: latestData.ext_temp,
+      status: sensorStatuses.temperature
+    } : null,
+    humidity: latestData.humidity != null ? {
+      value: latestData.humidity,
+      status: sensorStatuses.humidity
+    } : null,
+    soil_moisture: latestData.soil_moisture_1 != null ? {
+      value: latestData.soil_moisture_1,
+      status: sensorStatuses.soil_moisture
+    } : null,
+    light: latestData.light != null ? {
+      value: latestData.light,
+      status: sensorStatuses.light
+    } : null
+  };
+}
 
 exports.getSensorHealth = async (req, res) => {
   const { plant_id, sensor_type } = req.query;
@@ -522,19 +607,15 @@ exports.getHealthDiagnostics = async (req, res) => {
     const { plant_id } = req.query;
     await validatePlantId(plant_id);
     
-    // Simplified analysis: only check the latest readings
-    const latestReadings = await getLatestReadings(plant_id);
-    
-    // Simplified health score calculation
-    const overallScore = (latestReadings.temperature + latestReadings.humidity + latestReadings.light + latestReadings.soil_moisture) / 4;
-    
-    // Map score to status
-    let overallHealth = mapScoreToHealth(overallScore);
+    const latestData = await getValidatedSensorData(plant_id);
+    const sensorStatuses = await getSensorHealthStatuses(latestData);
+    const { health: overallHealth, score: overallScore } = calculateOverallHealth(sensorStatuses);
+    const readingsWithStatus = formatSensorReadings(latestData, sensorStatuses);
 
     return res.status(200).send({
       overall_health: overallHealth,
-      health_score: Math.round(overallScore),
-      latest_readings: latestReadings
+      health_score: overallScore,
+      latest_readings: readingsWithStatus
     });
   } catch (err) {
     console.error('Error in getHealthDiagnostics:', err);
@@ -547,14 +628,10 @@ exports.getCareSchedule = async (req, res) => {
     const { plant_id } = req.query;
     await validatePlantId(plant_id);
     
-    // Get plant type and preferences
-    const plant = await Plant.readDataById(plant_id);
-    const plantType = plant[0].plant_type;
+    const [plant] = await Plant.readDataById(plant_id);
+    const plantType = plant?.plant_type || 'DEFAULT';
     
-    // Calculate watering schedule
     const wateringSchedule = await calculateWateringSchedule(plant_id, plantType);
-    
-    // Calculate misting schedule if needed
     const mistingSchedule = plantType === 'FERN' ? 
       await calculateMistingSchedule(plant_id) : null;
     
@@ -562,7 +639,7 @@ exports.getCareSchedule = async (req, res) => {
     if (wateringSchedule) {
       nextActions.push({
         type: 'WATERING',
-        due_in_hours: wateringSchedule.next_in_hours,
+        due_in_hours: wateringSchedule.next_in_hours || 0,
         priority: wateringSchedule.priority,
         details: wateringSchedule.details
       });
@@ -571,18 +648,25 @@ exports.getCareSchedule = async (req, res) => {
     if (mistingSchedule) {
       nextActions.push({
         type: 'MISTING',
-        due_in_hours: mistingSchedule.next_in_hours,
+        due_in_hours: mistingSchedule.next_in_hours || 0,
         priority: mistingSchedule.priority,
         details: mistingSchedule.details
       });
     }
+
+    const latestReadings = await getLatestReadings(plant_id);
 
     return res.status(200).send({
       plant_id: plant_id,
       timestamp: new Date().toISOString(),
       next_actions: nextActions,
       recent_actions: await getRecentActions(plant_id),
-      sensor_context: await getLatestReadings(plant_id)
+      sensor_context: latestReadings || {
+        soil_moisture: null,
+        temperature: null,
+        humidity: null,
+        light: null
+      }
     });
   } catch (err) {
     console.error('Error in getCareSchedule:', err);

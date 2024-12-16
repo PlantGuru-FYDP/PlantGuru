@@ -324,7 +324,7 @@ private fun createRealDataSet(realData: List<SensorData>, sensorType: SensorType
         setDrawValues(false)
         valueTextSize = 10f
         setCircleColor(color)
-        circleRadius = 2.3f
+        circleRadius = 2.5f
         mode = LineDataSet.Mode.CUBIC_BEZIER
         lineWidth = 2f
         setDrawFilled(true)

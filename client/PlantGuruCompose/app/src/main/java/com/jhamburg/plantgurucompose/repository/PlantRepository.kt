@@ -56,17 +56,18 @@ class PlantRepository @Inject constructor(
     }
 
     suspend fun getPlants(userId: Int): List<PlantResponse> {
-        return try {
+        Log.d("PlantRepository", "Making API call to fetch plants for userId: $userId")
+        try {
             Log.d("PlantRepository", "Fetching plants with sensors for user: $userId")
             val response = apiService.plantRead(userId, includeSensors = true)
-            Log.d("PlantRepository", "Received plants with sensors: $response")
-            response.map { plant ->
+            Log.d("PlantRepository", "Received API response with ${response.size} plants: ${response.map { it.plantName }}")
+            return response.map { plant ->
                 getPlantAdditionalDetails(plant.plantId)
                 plant
             }
         } catch (e: Exception) {
-            Log.e("PlantRepository", "Get plants error: ${e.message}")
-            emptyList()
+            Log.e("PlantRepository", "Error fetching plants", e)
+            throw e
         }
     }
 

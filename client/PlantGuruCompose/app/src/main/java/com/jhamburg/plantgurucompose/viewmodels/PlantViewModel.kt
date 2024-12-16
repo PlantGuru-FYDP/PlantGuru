@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import javax.inject.Inject
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 @HiltViewModel
 class PlantViewModel @Inject constructor(
@@ -69,67 +71,108 @@ class PlantViewModel @Inject constructor(
 
     private var initialLoadStarted = false
 
+    private val updateMutex = Mutex()
+
+    private val _isUpdating = MutableStateFlow(false)
+    val isUpdating: StateFlow<Boolean> = _isUpdating
+
     fun isLoggedIn(): Boolean = authManager.isLoggedIn()
 
     fun getPlants(userId: Int, predict: Boolean = false, forceRefresh: Boolean = false) {
-        if (!forceRefresh && initialLoadStarted) {
-            Log.d("PlantViewModel", "Skipping duplicate load - initial load already started")
+        Log.d("PlantViewModel", """
+            getPlants called:
+            - userId: $userId
+            - forceRefresh: $forceRefresh 
+            - predict: $predict
+            - current plants: ${_plants.value.map { it.plantName }}
+            - initialLoadStarted: $initialLoadStarted
+            - loading: ${_loading.value}
+            - isUpdating: ${_isUpdating.value}
+        """.trimIndent())
+        
+        if (_loading.value) {
+            Log.d("PlantViewModel", "Skipping getPlants call - already loading")
             return
         }
 
         viewModelScope.launch {
             try {
-                initialLoadStarted = true
                 _loading.value = true
-                Log.d(
-                    "PlantViewModel",
-                    "Fetching plants for userId: $userId, forceRefresh: $forceRefresh"
-                )
-
-                if (forceRefresh) {
-                    _plants.value = emptyList()
-                    _plantDetails.value = emptyMap()
-                }
-
+                
+                val currentPlants = _plants.value
+                val currentDetails = _plantDetails.value
+                
                 val plants = repository.getPlants(userId)
-                Log.d("PlantViewModel", "Received plants: $plants")
-                _plants.value = plants
-
-                val details = plants.associate { plant ->
-                    val currentImageUri = imageStorageManager.getImageUri(plant.plantId)?.toString()
-
-                    val localDetails =
-                        localStorageHelper.getPlantDetails(plant.plantId)?.let { details ->
+                Log.d("PlantViewModel", "Received ${plants.size} plants from repository")
+                
+                if (plants.isNotEmpty()) {
+                    _plants.value = plants
+                    
+                    val details = plants.associate { plant ->
+                        val currentImageUri = imageStorageManager.getImageUri(plant.plantId)?.toString()
+                        val localDetails = localStorageHelper.getPlantDetails(plant.plantId)?.let { details ->
                             details.copy(imageUri = currentImageUri)
                         }
-                    val staticDetails = staticPlantDetails[plant.plantId]
-
-                    Log.d(
-                        "PlantViewModel", """
-                        Plant ${plant.plantId}:
-                        - Current Image URI: $currentImageUri
-                        - Local details: $localDetails
-                        - Static details: $staticDetails
-                    """.trimIndent()
-                    )
-
-                    plant.plantId to (localDetails ?: staticDetails)
-                }
-
-                Log.d("PlantViewModel", "Setting plant details: $details")
-                _plantDetails.value = details
-
-                if (predict) {
-                    plants.forEach { plant ->
-                        predictNextWatering(plant.plantId)
+                        val staticDetails = staticPlantDetails[plant.plantId]
+                        plant.plantId to (localDetails ?: staticDetails)
                     }
+                    
+                    _plantDetails.value = details
+                    
+                    if (predict) {
+                        plants.forEach { plant ->
+                            predictNextWatering(plant.plantId)
+                        }
+                    }
+                } else if (!forceRefresh) {
+                    _plants.value = currentPlants
+                    _plantDetails.value = currentDetails
                 }
             } catch (e: Exception) {
                 Log.e("PlantViewModel", "Error loading plants", e)
                 _error.value = e.message
             } finally {
                 _loading.value = false
+                if (!forceRefresh) {
+                    initialLoadStarted = true
+                }
             }
+        }
+    }
+
+    private suspend fun refreshPlants(userId: Int, predict: Boolean = false, forceRefresh: Boolean = false) {
+        try {
+            val plants = repository.getPlants(userId)
+            
+            if (forceRefresh) {
+                Log.d("PlantViewModel", "Force refresh: Clearing existing data")
+                _plantDetails.value = emptyMap()
+                initialLoadStarted = false
+            }
+
+            _plants.value = plants
+            
+            val details = plants.associate { plant ->
+                val currentImageUri = imageStorageManager.getImageUri(plant.plantId)?.toString()
+
+                val localDetails =
+                    localStorageHelper.getPlantDetails(plant.plantId)?.let { details ->
+                        details.copy(imageUri = currentImageUri)
+                    }
+                val staticDetails = staticPlantDetails[plant.plantId]
+
+                plant.plantId to (localDetails ?: staticDetails)
+            }
+            _plantDetails.value = details
+
+            if (predict) {
+                plants.forEach { plant ->
+                    predictNextWatering(plant.plantId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("PlantViewModel", "Error refreshing plants: ${e.message}")
+            throw e
         }
     }
 
@@ -169,16 +212,21 @@ class PlantViewModel @Inject constructor(
         }
     }
 
-    suspend fun savePlantAdditionalDetails(plantId: Int, details: PlantAdditionalDetails) {
+    suspend fun savePlantAdditionalDetails(
+        plantId: Int, 
+        details: PlantAdditionalDetails,
+        skipRefresh: Boolean = false
+    ) {
         try {
             Log.d("PlantViewModel", "Starting to save details for plant $plantId")
 
-            // 1. Save image first and wait for completion
-            val finalImageUri = details.imageUri?.let { uri ->
-                Log.d("PlantViewModel", "Saving image: $uri")
-                imageStorageManager.saveImage(Uri.parse(uri), plantId)?.also { savedUri ->
+            val finalImageUri = if (details.imageUri != null && details.imageUri != plantDetails.value[plantId]?.imageUri) {
+                Log.d("PlantViewModel", "Saving new image: ${details.imageUri}")
+                imageStorageManager.saveImage(Uri.parse(details.imageUri), plantId)?.also { savedUri ->
                     Log.d("PlantViewModel", "Image saved with URI: $savedUri")
                 }?.toString()
+            } else {
+                plantDetails.value[plantId]?.imageUri
             }
 
             // 2. Create and save final details
@@ -191,16 +239,17 @@ class PlantViewModel @Inject constructor(
                 put(plantId, finalDetails)
             }
 
-            // 4. Force a complete refresh of all plant details
-            val userId = _userId.value
-            if (userId != null) {
-                Log.d("PlantViewModel", "Triggering full refresh for user $userId")
-                getPlants(userId, forceRefresh = true)
+            if (!skipRefresh) {
+                val userId = _userId.value
+                if (userId != null) {
+                    Log.d("PlantViewModel", "Triggering full refresh for user $userId")
+                    getPlants(userId, forceRefresh = true)
+                }
             }
 
         } catch (e: Exception) {
             Log.e("PlantViewModel", "Error in savePlantAdditionalDetails", e)
-            throw e // Propagate error to UI
+            throw e
         }
     }
 
@@ -263,21 +312,53 @@ class PlantViewModel @Inject constructor(
         plantName: String? = null,
         age: Int? = null,
         lastWatered: LocalDateTime? = null,
-        nextWateringTime: LocalDateTime? = null
+        nextWateringTime: LocalDateTime? = null,
+        predict: Boolean = false
     ) {
-        try {
-            repository.updatePlant(
-                plantId = plantId,
-                plantName = plantName,
-                age = age,
-                lastWatered = lastWatered,
-                nextWateringTime = nextWateringTime
-            )
-            // Force refresh plants list to get updated data
-            _userId.value.let { getPlants(it, forceRefresh = true) }
-        } catch (e: Exception) {
-            Log.e("PlantViewModel", "Error updating plant: ${e.message}")
-            throw e
+        updateMutex.withLock {
+            try {
+                _isUpdating.value = true
+                
+                Log.d("PlantViewModel", """
+                    Starting plant update:
+                    - plantId: $plantId
+                    - newName: $plantName
+                    - currentPlants: ${_plants.value.map { it.plantName }}
+                """.trimIndent())
+
+                repository.updatePlant(
+                    plantId = plantId,
+                    plantName = plantName,
+                    age = age,
+                    lastWatered = lastWatered,
+                    nextWateringTime = nextWateringTime
+                )
+
+                val currentPlants = _plants.value
+                
+                _userId.value?.let { userId ->
+                    val plants = repository.getPlants(userId)
+                    if (plants.isNotEmpty()) {
+                        _plants.value = plants
+                        val details = plants.associate { plant ->
+                            val currentImageUri = imageStorageManager.getImageUri(plant.plantId)?.toString()
+                            val localDetails = localStorageHelper.getPlantDetails(plant.plantId)?.let { details ->
+                                details.copy(imageUri = currentImageUri)
+                            }
+                            val staticDetails = staticPlantDetails[plant.plantId]
+                            plant.plantId to (localDetails ?: staticDetails)
+                        }
+                        _plantDetails.value = details
+                    } else {
+                        _plants.value = currentPlants
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("PlantViewModel", "Error updating plant: ${e.message}")
+                throw e
+            } finally {
+                _isUpdating.value = false
+            }
         }
     }
 

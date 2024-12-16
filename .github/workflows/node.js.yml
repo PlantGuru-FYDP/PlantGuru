@@ -32,7 +32,8 @@ jobs:
     - name: Install dependencies
       run: |
         export NODE_OPTIONS="--max_old_space_size=512"
-        npm ci --prefer-offline --no-audit
+        # Install dependencies with production flag and limited concurrency
+        npm ci --prefer-offline --no-audit --production --maxsockets=1
     - name: Start Server
       env:
         RDS_HOSTNAME: ${{ secrets.RDS_HOSTNAME }}

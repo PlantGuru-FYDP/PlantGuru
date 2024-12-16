@@ -139,6 +139,7 @@ fun PlantListScreen(
     val userId by plantViewModel.userId.collectAsState()
     val plants by plantViewModel.plants.collectAsState()
     val loading by plantViewModel.loading.collectAsState()
+    val isUpdating by plantViewModel.isUpdating.collectAsState()
 
     LaunchedEffect(Unit) {
         Log.d("PlantListScreen", "Initial LaunchedEffect triggered")
@@ -149,7 +150,9 @@ fun PlantListScreen(
             }
             return@LaunchedEffect
         }
-        plantViewModel.getPlants(userId)
+        if (plants.isEmpty()) {
+            plantViewModel.getPlants(userId)
+        }
     }
 
     var isFirstResume by remember { mutableStateOf(true) }
@@ -213,9 +216,15 @@ fun PlantListScreen(
         ?.collectAsState(initial = false) ?: remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshTrigger) {
+        Log.d("PlantListScreen", "Refresh trigger changed: $refreshTrigger")
         if (refreshTrigger) {
-            plantViewModel.getPlants(userId, forceRefresh = true)
+            Log.d("PlantListScreen", "Initiating forced refresh")
+            userId?.let { 
+                Log.d("PlantListScreen", "Refreshing plants for user ${it}")
+                plantViewModel.getPlants(it, forceRefresh = true)
+            }
             navController.currentBackStackEntry?.savedStateHandle?.set("refresh", false)
+            Log.d("PlantListScreen", "Reset refresh trigger")
         }
     }
 
@@ -260,7 +269,7 @@ fun PlantListScreen(
                 .padding(paddingValues)
         ) {
             when {
-                loading || isRefreshing -> {
+                loading && !isUpdating -> {
                     Log.d("PlantListScreen", "Showing loading state")
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -295,6 +304,8 @@ fun PlantListScreen(
                     Log.d("PlantListScreen", "Showing plant list with ${plants.size} plants")
                     PlantList(
                         plants,
+                        loading,
+                        isUpdating,
                         plantDetails,
                         navController,
                         userId,
@@ -329,27 +340,44 @@ fun PlantListScreen(
 @Composable
 private fun PlantList(
     plants: List<PlantResponse>,
+    loading: Boolean,
+    isUpdating: Boolean,
     plantDetails: Map<Int, PlantAdditionalDetails?>,
     navController: NavController,
     userId: Int,
     onPlantClick: (Int) -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(vertical = 16.dp),
-        state = rememberLazyListState()
-    ) {
-        items(plants.size) { index ->
-            val plant = plants[index]
-            val details = plantDetails[plant.plantId]
-            PlantCard(
-                plant = plant,
-                details = details,
-                navController = navController,
-                userId = userId,
-                onClick = { onPlantClick(plant.plantId) }
-            )
+    when {
+        loading && !isUpdating -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        plants.isEmpty() && !isUpdating -> {
+            EmptyPlantScreen(navController, userId)
+        }
+        else -> {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(vertical = 16.dp),
+                state = rememberLazyListState()
+            ) {
+                items(plants.size) { index ->
+                    val plant = plants[index]
+                    val details = plantDetails[plant.plantId]
+                    PlantCard(
+                        plant = plant,
+                        details = details,
+                        navController = navController,
+                        userId = userId,
+                        onClick = { onPlantClick(plant.plantId) }
+                    )
+                }
+            }
         }
     }
 }
