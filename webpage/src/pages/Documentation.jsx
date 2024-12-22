@@ -36,15 +36,6 @@ const documentationSections = {
             <li>Backend Server - Data storage and processing</li>
           </Box>
         </Typography>
-        <Typography variant="h6" gutterBottom>
-          Quick Start Guide
-        </Typography>
-        <Typography component="div" sx={{ pl: 2 }}>
-          1. Set up the embedded device with sensors<br/>
-          2. Install the Android app<br/>
-          3. Create an account and connect your device<br/>
-          4. Start monitoring your plants
-        </Typography>
       </>
     )
   },
@@ -137,7 +128,7 @@ const documentationSections = {
           <Button 
             variant="contained" 
             startIcon={<DownloadIcon />}
-            href="/PlantGuru.apk"
+            href="PlantGuru/PlantGuru.apk"
             download
           >
             Download PlantGuru APK
@@ -146,6 +137,67 @@ const documentationSections = {
             Download and install the latest version of PlantGuru for Android
           </Typography>
         </Box>
+        <Typography variant="h6" gutterBottom>
+          Installing APK on Android
+        </Typography>
+        <Typography component="div" sx={{ pl: 2, mb: 3 }}>
+          1. Before Installation:<br/>
+          <Box sx={{ pl: 3 }}>
+            • Enable "Install from Unknown Sources" in your Android settings<br/>
+            • On Android 8 or higher: Go to Settings {'>'} Apps {'>'} Special access {'>'} Install unknown apps<br/>
+            • On Android 7 or lower: Go to Settings {'>'} Security {'>'} Unknown sources
+          </Box>
+          <br/>
+          2. Installation Steps:<br/>
+          <Box sx={{ pl: 3 }}>
+            • Download the PlantGuru APK file<br/>
+            • Open your Downloads folder<br/>
+            • Tap on PlantGuru.apk to start installation<br/>
+            • Review the requested permissions and tap "Install"<br/>
+            • Wait for installation to complete and tap "Open"
+          </Box>
+    
+        </Typography>
+
+        <Typography variant="h6" gutterBottom>
+          Installing APK on Emulator (No Android Device)
+        </Typography>
+        <Typography component="div" sx={{ pl: 2, mb: 3 }}>
+          If you don't have an Android device, you can run PlantGuru on an emulator:
+          <br/><br/>
+          1. Setting up Android Emulator:<br/>
+          <Box sx={{ pl: 3 }}>
+          • Install Android Studio from{' '}
+            <a href="https://developer.android.com/studio" target="_blank" rel="noopener noreferrer">
+              developer.android.com/studio
+            </a><br/>
+            • Open Android Studio<br/>
+            • Click Tools {'>'} Device Manager<br/>
+            • Click "Create Device" button<br/>
+            • Select "Pixel 6" or any other modern phone from the list<br/>
+            • Click "Next"<br/>
+            • Select the latest Android release (API 34 recommended)<br/>
+            • Click "Download" next to the release if not already downloaded<br/>
+            • Click "Next" and then "Finish"
+          </Box>
+          <br/>
+          2. Installing on Emulator:<br/>
+          <Box sx={{ pl: 3 }}>
+            • Start the emulator by clicking the play button in Device Manager<br/>
+            • Wait for the emulator to fully boot up<br/>
+            • Drag and drop the PlantGuru.apk file onto the emulator window<br/>
+            • Or use the command line: `adb install path/to/PlantGuru.apk`<br/>
+            • The app will install automatically
+          </Box>
+          <br/>
+          3. Emulator Tips:<br/>
+          <Box sx={{ pl: 3 }}>
+            • Allocate at least 2GB RAM to the emulator for smooth performance<br/>
+            • Enable hardware acceleration in Android Studio for better performance<br/>
+            • For Bluetooth testing, the emulator supports virtual Bluetooth functionality<br/>
+          </Box>
+        </Typography>
+
         <Typography variant="h6" gutterBottom>
           Development Setup
         </Typography>

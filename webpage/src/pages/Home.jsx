@@ -80,7 +80,7 @@ export default function Home() {
               </Button>
               <Button
                 component={RouterLink}
-                to="/presentation"
+                to="/presentationLaunch"
                 variant="contained"
                 startIcon={<PresentationIcon />}
               >
@@ -108,14 +108,13 @@ export default function Home() {
                 <Button 
                   variant="contained" 
                   startIcon={<DownloadIcon />}
-                  href="/PlantGuru.apk"
-                  download
+                  component="a"
+                  href="https://plantguru-fydp.github.io/PlantGuru/#/docs#android-app"
+                  rel="noopener noreferrer"
                 >
-                  Download PlantGuru APK
+                  Install App
                 </Button>
-                <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                  Download and install the latest version of PlantGuru for Android
-                </Typography>
+               
               </Box>
             </Stack>
           </Paper>

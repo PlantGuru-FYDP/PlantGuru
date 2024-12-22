@@ -47,8 +47,8 @@ export default function Layout() {
             </LogoText>
           </LogoContainer>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <NavButton component={RouterLink} to="/display">
-              Display
+            <NavButton component={RouterLink} to="/presentationLaunch">
+              Presentation
             </NavButton>
             <NavButton component={RouterLink} to={`/docs${hash ? '#' + hash : ''}`}>
               Documentation
