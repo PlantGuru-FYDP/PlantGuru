@@ -128,7 +128,7 @@ const documentationSections = {
           <Button 
             variant="contained" 
             startIcon={<DownloadIcon />}
-            href="PlantGuru/PlantGuru.apk"
+            href="PlantGuru.apk"
             download
           >
             Download PlantGuru APK
