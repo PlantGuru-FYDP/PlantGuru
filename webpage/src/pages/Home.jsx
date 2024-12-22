@@ -1,4 +1,10 @@
-import { Typography, Box, Paper, Grid } from '@mui/material';
+import { Typography, Box, Paper, Grid, Button, Stack } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import ArticleIcon from '@mui/icons-material/Article';
+import PresentationIcon from '@mui/icons-material/Slideshow';
+import MonitorIcon from '@mui/icons-material/MonitorHeart';
+import DownloadIcon from '@mui/icons-material/Download';
 
 export default function Home() {
   return (
@@ -56,6 +62,62 @@ export default function Home() {
                 </Typography>
               </Grid>
             </Grid>
+          </Paper>
+        </Grid>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 3, mt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Quick Links
+            </Typography>
+            <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 2 }}>
+              <Button
+                component={RouterLink}
+                to="/docs"
+                variant="contained"
+                startIcon={<ArticleIcon />}
+              >
+                Documentation
+              </Button>
+              <Button
+                component={RouterLink}
+                to="/presentation"
+                variant="contained"
+                startIcon={<PresentationIcon />}
+              >
+                Capstone Presentation
+              </Button>
+              <Button
+                component="a"
+                href="https://github.com/SYSC4907-PlantGuru/PlantGuru"
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="contained"
+                startIcon={<GitHubIcon />}
+              >
+                GitHub Repository
+              </Button>
+              <Button
+                component={RouterLink}
+                to="/live"
+                variant="contained"
+                startIcon={<MonitorIcon />}
+              >
+                Live Monitoring
+              </Button>
+              <Box sx={{ pl: 0 }}>
+                <Button 
+                  variant="contained" 
+                  startIcon={<DownloadIcon />}
+                  href="/PlantGuru.apk"
+                  download
+                >
+                  Download PlantGuru APK
+                </Button>
+                <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                  Download and install the latest version of PlantGuru for Android
+                </Typography>
+              </Box>
+            </Stack>
           </Paper>
         </Grid>
       </Grid>
