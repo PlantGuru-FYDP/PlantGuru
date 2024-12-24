@@ -88,7 +88,7 @@ export default function Home() {
               </Button>
               <Button
                 component="a"
-                href="https://github.com/SYSC4907-PlantGuru/PlantGuru"
+                href="https://github.com/PlantGuru-FYDP/PlantGuru"
                 target="_blank"
                 rel="noopener noreferrer"
                 variant="contained"
