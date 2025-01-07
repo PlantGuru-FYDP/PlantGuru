@@ -700,6 +700,82 @@ const documentationSections = {
         </Typography>
       </>
     )
+  },
+  'qta-analysis': {
+    title: 'QTA & Data Analysis',
+    content: (
+      <>
+        <Typography variant="h5" gutterBottom>
+          QTA & Data Analysis
+        </Typography>
+        
+        <Typography variant="h6" gutterBottom>
+          Server Access
+        </Typography>
+        <Typography component="div" sx={{ pl: 2, mb: 3 }}>
+          <strong>SSH Access</strong>
+          <Box sx={{ pl: 2 }}>
+            • Command format:
+            <pre>{`ssh -i "/path/to/key.pem" ec2-user@[EC2-INSTANCE-ADDRESS]`}</pre>
+            • Replace /path/to/key.pem with your private key path
+            • Replace [EC2-INSTANCE-ADDRESS] with the provided EC2 instance address
+          </Box>
+        </Typography>
+
+        <Typography variant="h6" gutterBottom>
+          Database Operations
+        </Typography>
+        <Typography component="div" sx={{ pl: 2, mb: 3 }}>
+          <strong>Database Backup</strong>
+          <Box sx={{ pl: 2 }}>
+            • Command format:
+            <pre>{`mysqldump -u [USERNAME] -h [DATABASE-ENDPOINT] -p --all-databases --quick --compress > database_dump.sql.gz`}</pre>
+            • Replace [USERNAME] with your database username
+            • Replace [DATABASE-ENDPOINT] with the RDS endpoint
+            • You will be prompted for the database password
+          </Box>
+
+          <strong>File Transfer</strong>
+          <Box sx={{ pl: 2 }}>
+            • Command format:
+            <pre>{`scp -i "/path/to/key.pem" ec2-user@[EC2-INSTANCE-ADDRESS]:database_dump.sql.gz .`}</pre>
+            • Replace paths and addresses as needed
+            • The dot at the end specifies transfer to current directory
+          </Box>
+        </Typography>
+
+        <Typography variant="h6" gutterBottom>
+          Data Analysis Tools
+        </Typography>
+        <Typography component="div" sx={{ pl: 2, mb: 3 }}>
+          <strong>SQL to CSV Conversion</strong>
+          <Box sx={{ pl: 2 }}>
+            • Location: /QTA
+            • Purpose: Converts SQL database dumps to CSV format for analysis
+            • Usage: python sql_to_csv.py [input_file] [output_directory]
+          </Box>
+
+          <strong>QTA Analysis Scripts</strong>
+          <Box sx={{ pl: 2 }}>
+            • Location: TBD
+            • Available Scripts: TBD
+          </Box>
+
+          <strong>Jupyter Notebooks</strong>
+          <Box sx={{ pl: 2 }}>
+            • Location: /QTA/josh for Josh's analysis files
+            - auto_correlation.ipynb
+            - entropy.ipynb
+            - josh_qta.ipynb
+            - regression.ipynb
+            - sample_rate.ipynb
+            - segmenter.ipynb
+            - time_series_analysis.ipynb
+            - watering_detection.ipynb
+          </Box>
+        </Typography>
+      </>
+    )
   }
 };
 
