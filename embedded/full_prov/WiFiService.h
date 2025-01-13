@@ -1,36 +1,21 @@
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include "Memory.h"
-
-#define ntpServer "pool.ntp.org"
-
 #ifndef WIFISERVICE_H
 #define WIFISERVICE_H
 
-bool isTimeSet() {
-  time_t now;
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    return false;
-  }
-  return true;
-}
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include "Memory.h"
+#include "esp_wpa2.h"
+#include <esp_wifi.h>
+#include "Certificate.h"
+#include "TimeService.h"
 
-bool requestTime() {
-  configTime(0, 0, ntpServer);
-  return isTimeSet();
-}
+// Forward declaration of SensorManager class
+class SensorManager;
 
-time_t getUnixTime() {
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    return 0;
-  }
-  return mktime(&timeinfo);
-}
-
-bool postSensorData(const String& url, String& postData, int numRetries) {
-  Serial.println("Attemping to post data to webserver");
+bool postData(const String& url, const String& jsonPayload, int numRetries) {
+  Serial.println("Attempting to post data to webserver");
+  Serial.println("URL: " + url);
+  Serial.println("Payload: " + jsonPayload);
 
   if(WiFi.status() != WL_CONNECTED) {
     Serial.println("Cannot post: WiFi is disconnected");
@@ -43,22 +28,13 @@ bool postSensorData(const String& url, String& postData, int numRetries) {
     return false;
   }
 
-  SensorData data;
-
   HTTPClient http;
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
 
   int httpResponseCode = 0;
-  int maxPerRequest = 10;
-  SensorData sendSensorDataBuffer[maxPerRequest];
-  int i = 0;
-  while (popFront(cb, data) && i < maxPerRequest) {
-    sendSensorDataBuffer[i] = data;
-    i++;
-  }
   while(numRetries-- > 0) {
-    httpResponseCode = http.POST(postData);
+    httpResponseCode = http.POST(jsonPayload);
     if(httpResponseCode > 0) {
       String response = http.getString();
       Serial.println("HTTP Response code: " + String(httpResponseCode));
@@ -66,25 +42,124 @@ bool postSensorData(const String& url, String& postData, int numRetries) {
       http.end();
 
       if (httpResponseCode == 200) {
-        Serial.println("Sucessfully posted data to webserver, deleting data from buffer");
-        saveBufferState(cb);
         return true;
       }
     } else {
       Serial.println("Attempt failed, retrying...");
-      delay(1000); // Wait a second before retrying
+      Serial.println(String(httpResponseCode));
+      delay(1000);
     }
-  }
-
-  Serial.println("Failed to post to webserver, reverting buffer");
-
-  // add back
-  for (int j = maxPerRequest; j >= 0; j--) {
-    pushFront(cb, sendSensorDataBuffer[j]);
   }
 
   http.end();
   return false;
 }
 
-#endif
+bool postSensorData(const String& url, int numRetries, SensorManager& sensorManager) {
+  if (isEmpty(cb)){
+    Serial.println("Cannot post: No Data");
+    return false;
+  }
+
+  SensorData data;
+  int maxPerRequest = 10;
+  SensorData sendSensorDataBuffer[maxPerRequest];
+  int i = 0;
+  String json_info = "[";
+  
+  while (popFront(cb, data) && i < maxPerRequest) {
+    sendSensorDataBuffer[i] = data;
+    
+    time_t unixTimestampSecs = sendSensorDataBuffer[i].timestamp;
+    struct tm timeInfo;
+    gmtime_r(&unixTimestampSecs, &timeInfo);
+    
+    char timestampStr[20];
+    strftime(timestampStr, sizeof(timestampStr), "%Y-%m-%dT%H:%M:%S", &timeInfo);
+    sendSensorDataBuffer[i].date = String(timestampStr);
+    
+    preferences.begin("device_prefs", true);
+    sendSensorDataBuffer[i].plant_id = preferences.getInt("plant_id", -1);
+    preferences.end();
+    
+    if (i != 0) {
+      json_info = json_info + "," + sendSensorDataBuffer[i].toJson();
+    } else {
+      json_info = json_info + sendSensorDataBuffer[i].toJson();
+    }
+    i++;
+  }
+  json_info = json_info + "]";
+
+  if (sendSensorDataBuffer[0].plant_id == -1) {
+    Serial.println("Cannot post: Invalid plant ID");
+    for (int j = i - 1; j >= 0; j--) {
+      pushFront(cb, sendSensorDataBuffer[j]);
+    }
+    return false;
+  }
+
+  bool success = postData(url, json_info, numRetries);
+  
+  if (!success) {
+    Serial.println("Failed to post to webserver, reverting buffer");
+    for (int j = i - 1; j >= 0; j--) {
+      pushFront(cb, sendSensorDataBuffer[j]);
+    }
+  } else {
+    Serial.println("Successfully posted data to webserver, saving buffer state");
+    saveBufferState(cb);
+    sensorManager.resetAverages();
+  }
+
+  return success;
+}
+
+void setupEnterpriseWiFi() {
+    Serial.println("\n=== Starting Enterprise WiFi Setup ===");
+    
+    preferences.begin("device_prefs", true);
+    bool isEnterprise = preferences.getBool("is_enterprise", false);
+    
+    if (isEnterprise) {
+        String identity = preferences.getString("enterprise_identity", "");
+        String username = preferences.getString("enterprise_username", "");
+        String password = preferences.getString("enterprise_password", "");
+        String ssid = preferences.getString("wifi_ssid", "");
+        
+        Serial.println("Retrieved enterprise credentials:");
+        Serial.printf("SSID: %s\n", ssid.c_str());
+        Serial.printf("Identity length: %d\n", identity.length());
+        Serial.printf("Username length: %d\n", username.length());
+        Serial.printf("Password length: %d\n", password.length());
+        
+        if (!identity.isEmpty() && !username.isEmpty() && !password.isEmpty()) {
+            Serial.println("All required credentials present, configuring WPA2 Enterprise...");
+            
+            WiFi.disconnect(true);
+            WiFi.mode(WIFI_STA);
+            
+            esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)identity.c_str(), identity.length());
+            esp_wifi_sta_wpa2_ent_set_username((uint8_t *)username.c_str(), username.length());
+            esp_wifi_sta_wpa2_ent_set_password((uint8_t *)password.c_str(), password.length());
+            
+            esp_wifi_sta_wpa2_ent_set_ca_cert(ca_cert, ca_cert_len);
+            
+            esp_wifi_sta_wpa2_ent_enable();
+            
+            WiFi.begin(ssid.c_str());
+            Serial.println("Enterprise WiFi configuration complete, attempting connection...");
+        } else {
+            Serial.println("ERROR: Missing required enterprise credentials!");
+            Serial.printf("Identity present: %s\n", identity.isEmpty() ? "No" : "Yes");
+            Serial.printf("Username present: %s\n", username.isEmpty() ? "No" : "Yes");
+            Serial.printf("Password present: %s\n", password.isEmpty() ? "No" : "Yes");
+        }
+    } else {
+        Serial.println("Not using enterprise WiFi");
+    }
+    preferences.end();
+    Serial.println("=== Enterprise WiFi Setup Complete ===\n");
+}
+
+#endif // WIFISERVICE_H

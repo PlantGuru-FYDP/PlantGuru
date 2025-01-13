@@ -1,26 +1,7 @@
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-#include <BLE2902.h>
-#include "Memory.h"
-#include "Constants.h"
+#ifndef BLESERVICE_H
+#define BLESERVICE_H
 
-// Service
-#define SERVICE_UUID "19b10000-e8f2-537e-4f6c-d104768a1214"
-
-// Sensor data characteristics
-#define TEMPERATURE1_CHARACTERISTIC_UUID "19b10001-e8f2-537e-4f6c-d104768a1215"
-#define TEMPERATURE2_CHARACTERISTIC_UUID "19b10002-e8f2-537e-4f6c-d104768a1216"
-#define LIGHT_CHARACTERISTIC_UUID "19b10003-e8f2-537e-4f6c-d104768a1217"
-#define SOILMOISTURE1_CHARACTERISTIC_UUID "19b10004-e8f2-537e-4f6c-d104768a1218"
-#define SOILMOISTURE2_CHARACTERISTIC_UUID "19b10005-e8f2-537e-4f6c-d104768a1219"
-#define HUMIDITY_CHARACTERISTIC_UUID "19b10006-e8f2-537e-4f6c-d104768a1220"
-
-// Settings characteristics
-#define RESET_CHARACTERISTIC_UUID "19b10007-e8f2-537e-4f6c-d104768a1221"
-#define ENDPOINT_CHARACTERISTIC_UUID "19b10008-e8f2-537e-4f6c-d104768a1222"
-#define UPDATE_PERIOD_BT_CHARACTERISTIC_UUID "19b10009-e8f2-537e-4f6c-d104768a1223"
-#define UPDATE_PERIOD_WIFI_CHARACTERISTIC_UUID "19b10010-e8f2-537e-4f6c-d104768a1224"
+#include "Config.h"
 
 class BluetoothService {
 public:
@@ -80,7 +61,7 @@ void BluetoothService::setup() {
     pServer->setCallbacks(new ServerCallbacks());
 
     // Create the BLE Service
-    BLEService* pService = pServer->createService(SERVICE_UUID);
+    BLEService* pService = pServer->createService(BLE_SERVICE_UUID);
 
     // Create BLE Characteristics for each sensor data
     pTemperature1Characteristic = pService->createCharacteristic(
@@ -151,9 +132,8 @@ void BluetoothService::setup() {
 
     // Start advertising
     BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
-    pAdvertising->addServiceUUID(SERVICE_UUID);
+    pAdvertising->addServiceUUID(BLE_SERVICE_UUID);
     pAdvertising->setScanResponse(false);
-    //pAdvertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
     BLEDevice::startAdvertising();
 
     #ifdef DEBUG
@@ -210,3 +190,5 @@ void BluetoothService::updateData(const SensorData& sensorData) {
         #endif
     }
 }
+
+#endif
