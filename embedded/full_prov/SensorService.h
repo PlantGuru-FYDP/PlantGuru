@@ -9,16 +9,6 @@
 #include "Memory.h"
 #include "TimeService.h"
 
-#define DS18S20_Pin D7
-#define DHT22_PIN 3
-#define LM35_PIN A3
-#define lightPin A0
-#define soilPin1 A1
-#define soilPin2 A2
-
-#define DHTTYPE DHT22
-#define ANALOG_MAX 4095.0
-
 OneWire oneWire(DS18S20_Pin);
 DallasTemperature sensors(&oneWire);
 
@@ -73,12 +63,15 @@ public:
     
     pushBack(cb, currentData);
     saveBufferState(cb);
+    
+    // Reset averages after recording to start fresh for next interval
+    resetAverages();
   }
 
   void setupBeforeSerial() {
-    pinMode(lightPin, INPUT);
-    pinMode(soilPin1, INPUT);
-    pinMode(soilPin2, INPUT);
+    pinMode(LIGHT_PIN, INPUT);
+    pinMode(SOIL_PIN1, INPUT);
+    pinMode(SOIL_PIN2, INPUT);
     #if USE_LM35
     pinMode(LM35_PIN, INPUT);
     #endif
@@ -96,40 +89,82 @@ public:
   }
 
   void updateSensorData() {
+    Serial.println("\n=== Sensor Data Update ===");
+    
+    // DS18B20 Temperature Sensor
     sensors.requestTemperatures();
     float s1 = sensors.getTempCByIndex(0);
+    Serial.printf("DS18B20 Raw Temperature: %.2f°C\n", s1);
     updateRunningAverage(runningAvgTemperature1, sampleCount, s1, validTemperature1);
     currentData.temperature1 = validTemperature1 ? runningAvgTemperature1 : NAN;
+    Serial.printf("DS18B20 Running Average: %.2f°C (Valid: %s)\n", 
+                 currentData.temperature1, 
+                 validTemperature1 ? "Yes" : "No");
 
-    float soilMoisture1 = (1 - analogRead(soilPin1) / (float)ANALOG_MAX) * 100;
+    // Soil Moisture Sensor 1
+    float rawSoil1 = analogRead(SOIL_PIN1);
+    float soilMoisture1 = (1 - rawSoil1 / (float)ANALOG_MAX) * 100;
+    Serial.printf("Soil Moisture 1 Raw: %.0f, Calculated: %.1f%%\n", rawSoil1, soilMoisture1);
     updateRunningAverage(runningAvgSoilMoisture1, sampleCount, soilMoisture1, validSoilMoisture1);
     currentData.soilMoisture1 = validSoilMoisture1 ? runningAvgSoilMoisture1 : NAN;
+    Serial.printf("Soil Moisture 1 Running Average: %.1f%% (Valid: %s)\n", 
+                 currentData.soilMoisture1, 
+                 validSoilMoisture1 ? "Yes" : "No");
 
-    float soilMoisture2 = (1 - analogRead(soilPin2) / (float)ANALOG_MAX) * 100;
+    // Soil Moisture Sensor 2
+    float rawSoil2 = analogRead(SOIL_PIN2);
+    float soilMoisture2 = (1 - rawSoil2 / (float)ANALOG_MAX) * 100;
+    Serial.printf("Soil Moisture 2 Raw: %.0f, Calculated: %.1f%%\n", rawSoil2, soilMoisture2);
     updateRunningAverage(runningAvgSoilMoisture2, sampleCount, soilMoisture2, validSoilMoisture2);
     currentData.soilMoisture2 = validSoilMoisture2 ? runningAvgSoilMoisture2 : NAN;
+    Serial.printf("Soil Moisture 2 Running Average: %.1f%% (Valid: %s)\n", 
+                 currentData.soilMoisture2, 
+                 validSoilMoisture2 ? "Yes" : "No");
 
-    float light = (analogRead(lightPin) / (float)ANALOG_MAX) * 100;
+    // Light Sensor
+    float rawLight = analogRead(LIGHT_PIN);
+    float light = (rawLight / (float)ANALOG_MAX) * 100;
+    Serial.printf("Light Raw: %.0f, Calculated: %.1f%%\n", rawLight, light);
     updateRunningAverage(runningAvgLight, sampleCount, light, validLight);
     currentData.light = validLight ? runningAvgLight : NAN;
+    Serial.printf("Light Running Average: %.1f%% (Valid: %s)\n", 
+                 currentData.light, 
+                 validLight ? "Yes" : "No");
 
     #if USE_LM35
+    // LM35 Temperature Sensor
     float voltage = analogRead(LM35_PIN);
+    Serial.printf("LM35 Raw Reading: %.2f\n", voltage);
     updateRunningAverage(runningAvgTemperature2, sampleCount, voltage, validTemperature2);
     currentData.temperature2 = validTemperature2 ? runningAvgTemperature2 : NAN;
     currentData.humidity = -1;
+    Serial.printf("LM35 Running Average: %.2f°C (Valid: %s)\n", 
+                 currentData.temperature2, 
+                 validTemperature2 ? "Yes" : "No");
     #else
+    // DHT Temperature & Humidity Sensor
     float s2 = dht.readTemperature();
+    float h1 = dht.readHumidity();
+    Serial.printf("DHT Raw Temperature: %.2f°C, Raw Humidity: %.1f%%\n", s2, h1);
+    
     updateRunningAverage(runningAvgTemperature2, sampleCount, s2, validTemperature2);
     currentData.temperature2 = validTemperature2 ? runningAvgTemperature2 : NAN;
+    Serial.printf("DHT Temperature Running Average: %.2f°C (Valid: %s)\n", 
+                 currentData.temperature2, 
+                 validTemperature2 ? "Yes" : "No");
 
-    float h1 = dht.readHumidity();
     updateRunningAverage(runningAvgHumidity, sampleCount, h1, validHumidity);
     currentData.humidity = validHumidity ? runningAvgHumidity : NAN;
+    Serial.printf("DHT Humidity Running Average: %.1f%% (Valid: %s)\n", 
+                 currentData.humidity, 
+                 validHumidity ? "Yes" : "No");
     #endif
 
     currentData.timestamp = getUnixTime();
-  }
+    Serial.printf("Timestamp: %lu\n", currentData.timestamp);
+    Serial.printf("Sample Count: %d\n", sampleCount);
+    Serial.println("=== End Sensor Update ===\n");
+}
 
   void resetAverages() {
     sampleCount = 0;

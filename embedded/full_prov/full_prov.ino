@@ -9,7 +9,7 @@
 #include "BLEService.h"
 #include "Config.h"
 #include <HTTPClient.h>
-#include <esp_wpa2.h>
+// #include <esp_wpa2.h>
 
 #define BUTTON2_PIN 27
 #define BUTTON_DEBOUNCE_TIME 50
@@ -22,6 +22,9 @@
 #define SENSOR_UPDATE_INTERVAL 0
 #define SENSOR_RECORD_INTERVAL 60000
 #define RESTART_DELAY 0
+
+
+
 
 SensorManager sensorManager;
 Scheduler scheduler;
@@ -176,7 +179,10 @@ void setup() {
 
       // Generate a unique device ID
       uint8_t mac[6];
+      #ifndef esp_read_mac(mac, ESP_IF_WIFI_STA)
+        #define esp_read_mac(mac, ESP_IF_WIFI_STA) WiFi.macAddress(mac)
       esp_read_mac(mac, ESP_MAC_WIFI_STA);
+      #endif
       char deviceId[13];
       snprintf(deviceId, sizeof(deviceId), "%02X%02X%02X%02X%02X%02X", 
                mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);

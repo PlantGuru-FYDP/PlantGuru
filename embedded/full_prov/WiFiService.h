@@ -4,7 +4,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include "Memory.h"
-#include "esp_wpa2.h"
+// #include "esp_wpa2.h"
 #include <esp_wifi.h>
 #include "Certificate.h"
 #include "TimeService.h"
@@ -109,7 +109,6 @@ bool postSensorData(const String& url, int numRetries, SensorManager& sensorMana
   } else {
     Serial.println("Successfully posted data to webserver, saving buffer state");
     saveBufferState(cb);
-    sensorManager.resetAverages();
   }
 
   return success;
@@ -139,13 +138,13 @@ void setupEnterpriseWiFi() {
             WiFi.disconnect(true);
             WiFi.mode(WIFI_STA);
             
-            esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)identity.c_str(), identity.length());
-            esp_wifi_sta_wpa2_ent_set_username((uint8_t *)username.c_str(), username.length());
-            esp_wifi_sta_wpa2_ent_set_password((uint8_t *)password.c_str(), password.length());
+            // esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)identity.c_str(), identity.length());
+            // esp_wifi_sta_wpa2_ent_set_username((uint8_t *)username.c_str(), username.length());
+            // esp_wifi_sta_wpa2_ent_set_password((uint8_t *)password.c_str(), password.length());
             
-            esp_wifi_sta_wpa2_ent_set_ca_cert(ca_cert, ca_cert_len);
+            // esp_wifi_sta_wpa2_ent_set_ca_cert(ca_cert, ca_cert_len);
             
-            esp_wifi_sta_wpa2_ent_enable();
+            // esp_wifi_sta_wpa2_ent_enable();
             
             WiFi.begin(ssid.c_str());
             Serial.println("Enterprise WiFi configuration complete, attempting connection...");

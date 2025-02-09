@@ -21,11 +21,11 @@ enum DeviceMode {
     MODE_ACTIVATED
 };
 
-#define NO_PROVISIONING false  // Set to true to skip provisioning mode
+#define NO_PROVISIONING true  // Set to true to skip provisioning mode
 
 // Only used when NO_PROVISIONING is true
-#define DEFAULT_WIFI_SSID ""
-#define DEFAULT_WIFI_PASSWORD ""
+#define DEFAULT_WIFI_SSID "Data City 263 - 2.4GHz"
+#define DEFAULT_WIFI_PASSWORD "ECE358PROBLEM"
 #define DEFAULT_PLANT_ID -1 // garlic = 10
 
 // ==========================================
@@ -56,7 +56,7 @@ enum DeviceMode {
 #define BUTTON2_PIN 27
 #define LED_PIN 2
 #define DS18S20_Pin D7
-#define DHT22_PIN 3
+#define DHT22_PIN A4
 #define LM35_PIN A3
 #define LIGHT_PIN A0
 #define SOIL_PIN1 A1
@@ -71,13 +71,13 @@ enum DeviceMode {
 #define RESET_BTN_UPDATE_INTERVAL 100
 #define RESET_LISTENER_UPDATE_INTERVAL 100
 #define SENSOR_UPDATE_INTERVAL 0
-#define SENSOR_RECORD_INTERVAL 60000
+#define SENSOR_RECORD_INTERVAL 60000/10
 #define RESTART_DELAY 0
 
 // ==========================================
 // Sensor Configuration
 // ==========================================
-#define USE_LM35 true  // Set to false to use DHT22 instead
+#define USE_LM35 false  // Set to false to use DHT22 instead
 #define DHTTYPE DHT22
 #define ANALOG_MAX 4095.0
 

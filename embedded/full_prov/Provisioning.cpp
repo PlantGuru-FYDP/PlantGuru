@@ -27,7 +27,8 @@
 #include <esp_wifi.h>
 #include <esp_event.h>
 #include <esp32-hal.h>
-#include <esp_wpa2.h>
+// #include <esp_wpa2.h>
+// #include <esp_eap_client.h>
 #if __has_include("qrcode.h")
   #include "qrcode.h"
 #endif
@@ -132,7 +133,10 @@ static esp_err_t plant_id_handler(uint32_t session_id, const uint8_t *inbuf, ssi
 
 void ProvisioningClass::generateDeviceId() {
     uint8_t mac[6];
+    #ifndef esp_read_mac(mac, ESP_IF_WIFI_STA)
+      #define esp_read_mac(mac, ESP_IF_WIFI_STA) WiFi.macAddress(mac)
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    #endif
     snprintf(device_id, sizeof(device_id), "%02X%02X%02X%02X-%02X%02X",
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
@@ -662,38 +666,38 @@ static esp_err_t wifi_config_handler(uint32_t session_id, const uint8_t *inbuf, 
                      isEnterprise ? "Yes" : "No"
         );
         
-        if (isEnterprise) {
-            const char* identity = doc["identity"] | "";
+        // if (isEnterprise) {
+        //     const char* identity = doc["identity"] | "";
             
-            // Save enterprise credentials to preferences
-            preferences.begin("device_prefs", false);
-            preferences.putString("enterprise_identity", identity);
-            preferences.putString("enterprise_password", password);  // Use the password field for enterprise password
-            preferences.putBool("is_enterprise", true);
-            preferences.putString("wifi_ssid", ssid);
-            preferences.end();
+        //     // Save enterprise credentials to preferences
+        //     preferences.begin("device_prefs", false);
+        //     preferences.putString("enterprise_identity", identity);
+        //     preferences.putString("enterprise_password", password);  // Use the password field for enterprise password
+        //     preferences.putBool("is_enterprise", true);
+        //     preferences.putString("wifi_ssid", ssid);
+        //     preferences.end();
 
-            // For enterprise networks, set up WPA2 Enterprise
-            WiFi.disconnect(true);
-            WiFi.mode(WIFI_STA);
+        //     // For enterprise networks, set up WPA2 Enterprise
+        //     WiFi.disconnect(true);
+        //     WiFi.mode(WIFI_STA);
             
-            Serial.println("\n=== Setting up Enterprise WiFi ===");
-            Serial.printf("Identity length: %d\n", strlen(identity));
-            Serial.printf("Password length: %d\n", strlen(password));
+        //     Serial.println("\n=== Setting up Enterprise WiFi ===");
+        //     Serial.printf("Identity length: %d\n", strlen(identity));
+        //     Serial.printf("Password length: %d\n", strlen(password));
             
-            esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)identity, strlen(identity));
-            esp_wifi_sta_wpa2_ent_set_username((uint8_t *)identity, strlen(identity));  // Use identity for username
-            esp_wifi_sta_wpa2_ent_set_password((uint8_t *)password, strlen(password));
+        //     esp_eap_client_set_identity((uint8_t *)identity, strlen(identity));
+        //     esp_eap_client_set_username((uint8_t *)identity, strlen(identity));  // Use identity for username
+        //     esp_eap_client_set_password((uint8_t *)password, strlen(password));
             
-            esp_wifi_sta_wpa2_ent_enable();
+        //     esp_wifi_sta_wpa2_ent_enable();
 
-            Serial.println("\n=== Enterprise WiFi Config Complete ===");
-            Serial.printf("SSID: %s\n", ssid);
-            Serial.printf("Identity: %s\n", identity);
-            Serial.println("Password: [hidden]");
-            Serial.println("WPA2 Enterprise enabled and configured");
-            Serial.println("=====================================\n");
-        } else {
+        //     Serial.println("\n=== Enterprise WiFi Config Complete ===");
+        //     Serial.printf("SSID: %s\n", ssid);
+        //     Serial.printf("Identity: %s\n", identity);
+        //     Serial.println("Password: [hidden]");
+        //     Serial.println("WPA2 Enterprise enabled and configured");
+        //     Serial.println("=====================================\n");
+        // } else {
             // Regular WiFi credentials
             preferences.begin("device_prefs", false);
             preferences.putString("wifi_ssid", ssid);
@@ -707,7 +711,7 @@ static esp_err_t wifi_config_handler(uint32_t session_id, const uint8_t *inbuf, 
             Serial.printf("First few chars of password: %.3s...\n", password);
             Serial.println("Attempting to save credentials...");
             Serial.println("Credentials saved to preferences");
-        }
+        // }
 
         const char *resp = "WiFi config received";
         *outbuf = (uint8_t *)strdup(resp);
@@ -904,37 +908,37 @@ bool setupWiFiConnection() {
     String ssid = preferences.getString("wifi_ssid", "");
     
     Serial.printf("Retrieved SSID: %s\n", ssid.c_str());
-    Serial.printf("Is Enterprise Network: %s\n", isEnterprise ? "true" : "false");
+    // Serial.printf("Is Enterprise Network: %s\n", isEnterprise ? "true" : "false");
     
-    if (isEnterprise) {
-        String identity = preferences.getString("enterprise_identity", "");
-        String username = preferences.getString("enterprise_username", "");
-        String password = preferences.getString("enterprise_password", "");
+    // if (isEnterprise) {
+    //     String identity = preferences.getString("enterprise_identity", "");
+    //     String username = preferences.getString("enterprise_username", "");
+    //     String password = preferences.getString("enterprise_password", "");
         
-        Serial.println("\n=== Enterprise WiFi Details ===");
-        Serial.printf("Identity Length: %d\n", identity.length());
-        Serial.printf("Username Length: %d\n", username.length());
-        Serial.printf("Password Length: %d\n", password.length());
+    //     Serial.println("\n=== Enterprise WiFi Details ===");
+    //     Serial.printf("Identity Length: %d\n", identity.length());
+    //     Serial.printf("Username Length: %d\n", username.length());
+    //     Serial.printf("Password Length: %d\n", password.length());
         
-        WiFi.disconnect(true);
-        WiFi.mode(WIFI_STA);
+    //     WiFi.disconnect(true);
+    //     WiFi.mode(WIFI_STA);
         
-        Serial.println("Setting enterprise credentials...");
-        esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)identity.c_str(), identity.length());
-        esp_wifi_sta_wpa2_ent_set_username((uint8_t *)username.c_str(), username.length());
-        esp_wifi_sta_wpa2_ent_set_password((uint8_t *)password.c_str(), password.length());
+    //     Serial.println("Setting enterprise credentials...");
+    //     esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)identity.c_str(), identity.length());
+    //     esp_wifi_sta_wpa2_ent_set_username((uint8_t *)username.c_str(), username.length());
+    //     esp_wifi_sta_wpa2_ent_set_password((uint8_t *)password.c_str(), password.length());
         
-        esp_wifi_sta_wpa2_ent_enable();
-        Serial.println("Enterprise WiFi enabled");
+    //     esp_wifi_sta_wpa2_ent_enable();
+    //     Serial.println("Enterprise WiFi enabled");
         
-        WiFi.begin(ssid.c_str());
-    } else {
+    //     WiFi.begin(ssid.c_str());
+    // } else {
         String password = preferences.getString("wifi_password", "");
         Serial.println("\n=== Standard WiFi Details ===");
         Serial.printf("Password Length: %d\n", password.length());
         
         WiFi.begin(ssid.c_str(), password.c_str());
-    }
+    // }
     preferences.end();
     
     Serial.println("\nAttempting WiFi connection...");
