@@ -729,7 +729,7 @@ const documentationSections = {
           <strong>Database Backup</strong>
           <Box sx={{ pl: 2 }}>
             • Command format:
-            <pre>{`mysqldump -u [USERNAME] -h [DATABASE-ENDPOINT] -p --all-databases --quick --compress > database_dump.sql.gz`}</pre>
+            <pre>{`mysqldump -u [USERNAME] -p -h [DATABASE-ENDPOINT] --all-databases --quick --compress > database_dump.sql.gz`}</pre>
             • Replace [USERNAME] with your database username
             • Replace [DATABASE-ENDPOINT] with the RDS endpoint
             • You will be prompted for the database password
