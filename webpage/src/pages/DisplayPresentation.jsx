@@ -189,7 +189,7 @@ const LiveDataDemo = () => {
         labels: [],
         datasets: [
           {
-            label: "External Temperature",
+            label: "Air Temperature",
             yAxisID: "y-degrees",
             data: [],
             borderColor: "rgba(75, 192, 192, 1)",
@@ -217,17 +217,10 @@ const LiveDataDemo = () => {
             borderWidth: 1,
           },
           {
-            label: "Soil Moisture 1",
+            label: "Soil Moisture",
             yAxisID: "y-percentage",
             data: [],
             borderColor: "rgba(54, 162, 235, 1)",
-            borderWidth: 1,
-          },
-          {
-            label: "Soil Moisture 2",
-            yAxisID: "y-percentage",
-            data: [],
-            borderColor: "rgba(75, 192, 192, 1)",
             borderWidth: 1,
           }
         ],
@@ -395,7 +388,6 @@ const LiveDataDemo = () => {
         chartInstance.current.data.datasets[2].data = smoothedData.map(d => ({ x: d.time_stamp, y: d.humidity }));
         chartInstance.current.data.datasets[3].data = smoothedData.map(d => ({ x: d.time_stamp, y: d.soil_temp }));
         chartInstance.current.data.datasets[4].data = smoothedData.map(d => ({ x: d.time_stamp, y: d.soil_moisture_1 }));
-        chartInstance.current.data.datasets[5].data = smoothedData.map(d => ({ x: d.time_stamp, y: d.soil_moisture_2 }));
         chartInstance.current.update();
       }
     } catch (error) {
@@ -537,7 +529,7 @@ const LiveDataDemo = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                     <DeviceThermostatIcon sx={{ color: 'primary.main' }} />
                     <Typography variant="body1">
-                      Temperature: {sensorData[0].ext_temp !== null ? sensorData[0].ext_temp.toFixed(1) + '°C' : 'N/A'}
+                      Air Temperature: {sensorData[0].ext_temp !== null ? sensorData[0].ext_temp.toFixed(1) + '°C' : 'N/A'}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
