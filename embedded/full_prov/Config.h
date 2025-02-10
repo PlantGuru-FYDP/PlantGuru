@@ -21,7 +21,7 @@ enum DeviceMode {
     MODE_ACTIVATED
 };
 
-#define NO_PROVISIONING true  // Set to true to skip provisioning mode
+#define NO_PROVISIONING false  // Set to true to skip provisioning mode
 
 // Only used when NO_PROVISIONING is true
 #define DEFAULT_WIFI_SSID "Data City 263 - 2.4GHz"
