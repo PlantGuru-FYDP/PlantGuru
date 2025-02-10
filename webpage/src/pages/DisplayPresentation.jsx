@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, IconButton, Typography, Paper, Grid, TextField, Button } from '@mui/material';
+import { Box, IconButton, Typography, Paper, Grid, TextField, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -126,6 +126,7 @@ const LiveDataDemo = () => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
   const [plantId, setPlantId] = useState(11);
+  const [customPlantId, setCustomPlantId] = useState("");
   const [sensorData, setSensorData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [bucketMinutes, setBucketMinutes] = useState(30);
@@ -133,6 +134,27 @@ const LiveDataDemo = () => {
     start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 24 hours ago
     end: new Date().toISOString().slice(0, 16) // current time
   });
+
+  const plantPresets = {
+    7: "Soil",
+    9: "Palm",
+    10: "Garlic",
+    11: "Purple Coleus",
+    12: "Spider Plant",
+    13: "Onion",
+    16: "Watering Position Test (Garlic)",
+    custom: "Custom Plant ID"
+  };
+
+  const handlePlantChange = (event) => {
+    const value = event.target.value;
+    if (value === 'custom') {
+      setPlantId(parseInt(customPlantId) || 11);
+    } else {
+      setPlantId(parseInt(value));
+      setCustomPlantId("");
+    }
+  };
 
   useEffect(() => {
     let timer;
@@ -294,33 +316,52 @@ const LiveDataDemo = () => {
       if (!buckets[key]) {
         buckets[key] = {
           count: 0,
-          ext_temp: 0,
-          light: 0,
-          humidity: 0,
-          soil_temp: 0,
-          soil_moisture_1: 0,
-          soil_moisture_2: 0
+          ext_temp: { sum: 0, count: 0 },
+          light: { sum: 0, count: 0 },
+          humidity: { sum: 0, count: 0 },
+          soil_temp: { sum: 0, count: 0 },
+          soil_moisture_1: { sum: 0, count: 0 },
+          soil_moisture_2: { sum: 0, count: 0 }
         };
       }
       
+      // Only add non-null values to the sums
+      if (point.ext_temp !== null) {
+        buckets[key].ext_temp.sum += point.ext_temp;
+        buckets[key].ext_temp.count++;
+      }
+      if (point.light !== null) {
+        buckets[key].light.sum += point.light;
+        buckets[key].light.count++;
+      }
+      if (point.humidity !== null) {
+        buckets[key].humidity.sum += point.humidity;
+        buckets[key].humidity.count++;
+      }
+      if (point.soil_temp !== null) {
+        buckets[key].soil_temp.sum += point.soil_temp;
+        buckets[key].soil_temp.count++;
+      }
+      if (point.soil_moisture_1 !== null) {
+        buckets[key].soil_moisture_1.sum += point.soil_moisture_1;
+        buckets[key].soil_moisture_1.count++;
+      }
+      if (point.soil_moisture_2 !== null) {
+        buckets[key].soil_moisture_2.sum += point.soil_moisture_2;
+        buckets[key].soil_moisture_2.count++;
+      }
       buckets[key].count++;
-      buckets[key].ext_temp += point.ext_temp;
-      buckets[key].light += point.light;
-      buckets[key].humidity += point.humidity;
-      buckets[key].soil_temp += point.soil_temp;
-      buckets[key].soil_moisture_1 += point.soil_moisture_1;
-      buckets[key].soil_moisture_2 += point.soil_moisture_2;
     });
     
-    // Calculate averages for each bucket
+    // Calculate averages for each bucket, handling null values
     return Object.entries(buckets).map(([time, values]) => ({
       time_stamp: time,
-      ext_temp: values.ext_temp / values.count,
-      light: values.light / values.count,
-      humidity: values.humidity / values.count,
-      soil_temp: values.soil_temp / values.count,
-      soil_moisture_1: values.soil_moisture_1 / values.count,
-      soil_moisture_2: values.soil_moisture_2 / values.count
+      ext_temp: values.ext_temp.count > 0 ? values.ext_temp.sum / values.ext_temp.count : null,
+      light: values.light.count > 0 ? values.light.sum / values.light.count : null,
+      humidity: values.humidity.count > 0 ? values.humidity.sum / values.humidity.count : null,
+      soil_temp: values.soil_temp.count > 0 ? values.soil_temp.sum / values.soil_temp.count : null,
+      soil_moisture_1: values.soil_moisture_1.count > 0 ? values.soil_moisture_1.sum / values.soil_moisture_1.count : null,
+      soil_moisture_2: values.soil_moisture_2.count > 0 ? values.soil_moisture_2.sum / values.soil_moisture_2.count : null
     })).sort((a, b) => new Date(a.time_stamp) - new Date(b.time_stamp));
   };
 
@@ -398,17 +439,44 @@ const LiveDataDemo = () => {
                 Chart Controls
               </Typography>
               <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Plant ID
-                </Typography>
-                <TextField
-                  type="number"
-                  value={plantId}
-                  onChange={(e) => setPlantId(e.target.value)}
-                  size="small"
-                  fullWidth
-                  sx={{ mb: 2 }}
-                />
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Plant Selection</InputLabel>
+                  <Select
+                    value={customPlantId ? 'custom' : plantId.toString()}
+                    onChange={handlePlantChange}
+                    label="Plant Selection"
+                  >
+                    {Object.entries(plantPresets).map(([id, name]) => 
+                      id === 'custom' ? (
+                        <MenuItem key={id} value={id}>
+                          <Box sx={{ width: '100%' }}>
+                            <Typography>{name}</Typography>
+                            {id === 'custom' && (
+                              <TextField
+                                size="small"
+                                type="number"
+                                placeholder="Enter Plant ID"
+                                value={customPlantId}
+                                onChange={(e) => {
+                                  setCustomPlantId(e.target.value);
+                                  if (e.target.value) {
+                                    setPlantId(parseInt(e.target.value));
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                sx={{ mt: 1, width: '100%' }}
+                              />
+                            )}
+                          </Box>
+                        </MenuItem>
+                      ) : (
+                        <MenuItem key={id} value={id}>
+                          {name} (ID: {id})
+                        </MenuItem>
+                      )
+                    )}
+                  </Select>
+                </FormControl>
                 
                 <Typography variant="subtitle2" gutterBottom>
                   Time Range
@@ -463,19 +531,19 @@ const LiveDataDemo = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                     <WaterDropIcon sx={{ color: 'primary.main' }} />
                     <Typography variant="body1">
-                      Soil Moisture: {sensorData[0].soil_moisture_1.toFixed(1)}%
+                      Soil Moisture: {sensorData[0].soil_moisture_1 !== null ? sensorData[0].soil_moisture_1.toFixed(1) + '%' : 'N/A'}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                     <DeviceThermostatIcon sx={{ color: 'primary.main' }} />
                     <Typography variant="body1">
-                      Temperature: {sensorData[0].ext_temp.toFixed(1)}°C
+                      Temperature: {sensorData[0].ext_temp !== null ? sensorData[0].ext_temp.toFixed(1) + '°C' : 'N/A'}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                     <LightbulbIcon sx={{ color: 'primary.main' }} />
                     <Typography variant="body1">
-                      Light: {sensorData[0].light.toFixed(1)}%
+                      Light: {sensorData[0].light !== null ? sensorData[0].light.toFixed(1) + '%' : 'N/A'}
                     </Typography>
                   </Box>
                 </Box>
