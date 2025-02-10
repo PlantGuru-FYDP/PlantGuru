@@ -331,7 +331,16 @@ const LiveDataDemo = () => {
       const endTime = new Date(timeRange.end);
       
       const response = await fetch(
-        `http://52.14.140.110:3000/api/sensorReadSeries?plant_id=${plantId}&time_stamp1=${startTime.toISOString()}&time_stamp2=${endTime.toISOString()}`
+        `https://52.14.140.110:3000/api/sensorReadSeries?plant_id=${plantId}&time_stamp1=${startTime.toISOString()}&time_stamp2=${endTime.toISOString()}`,
+        {
+          // Add these headers to handle CORS
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json',
+          },
+          // Ignore SSL certificate issues
+          mode: 'cors',
+        }
       );
       
       const data = await response.json();
