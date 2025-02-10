@@ -128,10 +128,11 @@ const LiveDataDemo = () => {
   const [plantId, setPlantId] = useState(11);
   const [sensorData, setSensorData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [bucketMinutes, setBucketMinutes] = useState(30);
   const [timeRange, setTimeRange] = useState({
-    start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 24 hours ago
-    end: new Date().toISOString().slice(0, 16) // current time
+    start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    end: new Date().toISOString().slice(0, 16)
   });
 
   useEffect(() => {
@@ -326,6 +327,7 @@ const LiveDataDemo = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const startTime = new Date(timeRange.start);
       const endTime = new Date(timeRange.end);
@@ -333,12 +335,10 @@ const LiveDataDemo = () => {
       const response = await fetch(
         `http://52.14.140.110:3000/api/sensorReadSeries?plant_id=${plantId}&time_stamp1=${startTime.toISOString()}&time_stamp2=${endTime.toISOString()}`,
         {
-          // Add these headers to handle CORS
           headers: {
             'Access-Control-Allow-Origin': '*',
             'Content-Type': 'application/json',
           },
-          // Allow insecure requests
           mode: 'cors',
         }
       );
@@ -359,6 +359,26 @@ const LiveDataDemo = () => {
       }
     } catch (error) {
       console.error('Error fetching sensor data:', error);
+      if (error.message.includes('Mixed Content') || error.message.includes('blocked')) {
+        setError(
+          <Box>
+            <Typography variant="body1" color="error" gutterBottom>
+              Unable to load sensor data due to browser security settings.
+            </Typography>
+            <Typography variant="body1" gutterBottom>
+              To view the live data, please:
+            </Typography>
+            <ol>
+              <Typography variant="body1" component="li">Click the lock icon (🔒) in your browser's address bar</Typography>
+              <Typography variant="body1" component="li">Click "Site Settings"</Typography>
+              <Typography variant="body1" component="li">Find "Insecure content" and change it to "Allow"</Typography>
+              <Typography variant="body1" component="li">Refresh the page</Typography>
+            </ol>
+          </Box>
+        );
+      } else {
+        setError('Error loading sensor data. Please try again later.');
+      }
     }
     setLoading(false);
   };
@@ -373,117 +393,123 @@ const LiveDataDemo = () => {
         <SensorsIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
         Real-Time Monitoring
       </Typography>
-      <Grid container spacing={4} sx={{ flexGrow: 1, minHeight: 0 }}>
-        <Grid item xs={12} md={8} sx={{ height: '100%' }}>
-          <Paper sx={{ 
-            p: 2, 
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <Box sx={{ flexGrow: 1, position: 'relative', minHeight: 0 }}>
-              <canvas ref={chartRef} style={{ position: 'absolute', width: '100%', height: '100%' }} />
-            </Box>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={4} sx={{ height: '100%' }}>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            style={{ height: '100%' }}
-          >
-            <Paper sx={{ p: 2, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Chart Controls
-              </Typography>
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Plant ID
-                </Typography>
-                <TextField
-                  type="number"
-                  value={plantId}
-                  onChange={(e) => setPlantId(e.target.value)}
-                  size="small"
-                  fullWidth
-                  sx={{ mb: 2 }}
-                />
-                
-                <Typography variant="subtitle2" gutterBottom>
-                  Time Range
-                </Typography>
-                <TextField
-                  label="Start Time"
-                  type="datetime-local"
-                  value={timeRange.start}
-                  onChange={(e) => setTimeRange(prev => ({ ...prev, start: e.target.value }))}
-                  size="small"
-                  fullWidth
-                  sx={{ mb: 1 }}
-                />
-                <TextField
-                  label="End Time"
-                  type="datetime-local"
-                  value={timeRange.end}
-                  onChange={(e) => setTimeRange(prev => ({ ...prev, end: e.target.value }))}
-                  size="small"
-                  fullWidth
-                  sx={{ mb: 2 }}
-                />
-                
-                <Typography variant="subtitle2" gutterBottom>
-                  Data Smoothing (minutes)
-                </Typography>
-                <TextField
-                  type="number"
-                  value={bucketMinutes}
-                  onChange={(e) => setBucketMinutes(Number(e.target.value))}
-                  size="small"
-                  fullWidth
-                  sx={{ mb: 2 }}
-                  inputProps={{ min: 1, max: 120 }}
-                />
-                
-                <Button
-                  variant="contained"
-                  onClick={handleRefresh}
-                  disabled={loading}
-                  fullWidth
-                >
-                  Update Chart
-                </Button>
+      {error ? (
+        <Paper sx={{ p: 3, mb: 2 }}>
+          {error}
+        </Paper>
+      ) : (
+        <Grid container spacing={4} sx={{ flexGrow: 1, minHeight: 0 }}>
+          <Grid item xs={12} md={8} sx={{ height: '100%' }}>
+            <Paper sx={{ 
+              p: 2, 
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ flexGrow: 1, position: 'relative', minHeight: 0 }}>
+                <canvas ref={chartRef} style={{ position: 'absolute', width: '100%', height: '100%' }} />
               </Box>
-              
-              {sensorData && sensorData[0] && (
-                <Box>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Latest Readings
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <WaterDropIcon sx={{ color: 'primary.main' }} />
-                    <Typography variant="body1">
-                      Soil Moisture: {sensorData[0].soil_moisture_1.toFixed(1)}%
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <DeviceThermostatIcon sx={{ color: 'primary.main' }} />
-                    <Typography variant="body1">
-                      Temperature: {sensorData[0].ext_temp.toFixed(1)}°C
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <LightbulbIcon sx={{ color: 'primary.main' }} />
-                    <Typography variant="body1">
-                      Light: {sensorData[0].light.toFixed(1)}%
-                    </Typography>
-                  </Box>
-                </Box>
-              )}
             </Paper>
-          </motion.div>
+          </Grid>
+          <Grid item xs={12} md={4} sx={{ height: '100%' }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              style={{ height: '100%' }}
+            >
+              <Paper sx={{ p: 2, height: '100%' }}>
+                <Typography variant="h6" gutterBottom>
+                  Chart Controls
+                </Typography>
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Plant ID
+                  </Typography>
+                  <TextField
+                    type="number"
+                    value={plantId}
+                    onChange={(e) => setPlantId(e.target.value)}
+                    size="small"
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  
+                  <Typography variant="subtitle2" gutterBottom>
+                    Time Range
+                  </Typography>
+                  <TextField
+                    label="Start Time"
+                    type="datetime-local"
+                    value={timeRange.start}
+                    onChange={(e) => setTimeRange(prev => ({ ...prev, start: e.target.value }))}
+                    size="small"
+                    fullWidth
+                    sx={{ mb: 1 }}
+                  />
+                  <TextField
+                    label="End Time"
+                    type="datetime-local"
+                    value={timeRange.end}
+                    onChange={(e) => setTimeRange(prev => ({ ...prev, end: e.target.value }))}
+                    size="small"
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  />
+                  
+                  <Typography variant="subtitle2" gutterBottom>
+                    Data Smoothing (minutes)
+                  </Typography>
+                  <TextField
+                    type="number"
+                    value={bucketMinutes}
+                    onChange={(e) => setBucketMinutes(Number(e.target.value))}
+                    size="small"
+                    fullWidth
+                    sx={{ mb: 2 }}
+                    inputProps={{ min: 1, max: 120 }}
+                  />
+                  
+                  <Button
+                    variant="contained"
+                    onClick={handleRefresh}
+                    disabled={loading}
+                    fullWidth
+                  >
+                    Update Chart
+                  </Button>
+                </Box>
+                
+                {sensorData && sensorData[0] && (
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Latest Readings
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <WaterDropIcon sx={{ color: 'primary.main' }} />
+                      <Typography variant="body1">
+                        Soil Moisture: {sensorData[0].soil_moisture_1.toFixed(1)}%
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <DeviceThermostatIcon sx={{ color: 'primary.main' }} />
+                      <Typography variant="body1">
+                        Temperature: {sensorData[0].ext_temp.toFixed(1)}°C
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <LightbulbIcon sx={{ color: 'primary.main' }} />
+                      <Typography variant="body1">
+                        Light: {sensorData[0].light.toFixed(1)}%
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </Paper>
+            </motion.div>
+          </Grid>
         </Grid>
-      </Grid>
+      )}
     </Box>
   );
 };
