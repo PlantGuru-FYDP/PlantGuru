@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Box, IconButton, Typography, Paper, Grid } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
+import { Box, IconButton, Typography, Paper, Grid, TextField, Button } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -25,7 +25,8 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
-
+import { Chart } from 'chart.js/auto';
+import 'chartjs-adapter-date-fns';
 
 const FullscreenContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
@@ -119,6 +120,365 @@ const SlideControls = styled(Box)({
   gap: 1,
   zIndex: 1000,
 });
+
+
+const LiveDataDemo = () => {
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
+  const [plantId, setPlantId] = useState(11);
+  const [sensorData, setSensorData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [bucketMinutes, setBucketMinutes] = useState(30);
+  const [timeRange, setTimeRange] = useState({
+    start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 24 hours ago
+    end: new Date().toISOString().slice(0, 16) // current time
+  });
+
+  useEffect(() => {
+    let timer;
+    // Add a small delay to ensure the canvas is ready
+    timer = setTimeout(() => {
+      if (chartRef.current) {
+        initChart();
+        fetchData();
+      }
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+        chartInstance.current = null;
+      }
+    };
+  }, []); // Only run on mount and unmount
+
+  const initChart = () => {
+    const ctx = chartRef.current.getContext("2d");
+    
+    if (chartInstance.current) {
+      chartInstance.current.destroy();
+      chartInstance.current = null;
+    }
+
+    chartInstance.current = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "External Temperature",
+            yAxisID: "y-degrees",
+            data: [],
+            borderColor: "rgba(75, 192, 192, 1)",
+            borderWidth: 1,
+          },
+          {
+            label: "Light",
+            yAxisID: "y-percentage",
+            data: [],
+            borderColor: "rgba(255, 206, 86, 1)",
+            borderWidth: 1,
+          },
+          {
+            label: "Humidity",
+            yAxisID: "y-percentage",
+            data: [],
+            borderColor: "rgba(153, 102, 255, 1)",
+            borderWidth: 1,
+          },
+          {
+            label: "Soil Temperature",
+            yAxisID: "y-degrees",
+            data: [],
+            borderColor: "rgba(255, 99, 132, 1)",
+            borderWidth: 1,
+          },
+          {
+            label: "Soil Moisture 1",
+            yAxisID: "y-percentage",
+            data: [],
+            borderColor: "rgba(54, 162, 235, 1)",
+            borderWidth: 1,
+          },
+          {
+            label: "Soil Moisture 2",
+            yAxisID: "y-percentage",
+            data: [],
+            borderColor: "rgba(75, 192, 192, 1)",
+            borderWidth: 1,
+          }
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: "time",
+            time: {
+              displayFormats: {
+                millisecond: 'HH:mm:ss.SSS',
+                second: 'HH:mm:ss',
+                minute: 'HH:mm',
+                hour: 'HH:mm',
+                day: 'MMM d',
+                week: 'MMM d',
+                month: 'MMM yyyy',
+                quarter: 'MMM yyyy',
+                year: 'yyyy'
+              },
+              tooltipFormat: 'MMM d, yyyy HH:mm',
+              unit: 'day',
+              stepSize: 1,
+              minUnit: 'hour'
+            },
+            title: {
+              display: true,
+              text: "Time"
+            },
+            ticks: {
+              maxRotation: 0,
+              autoSkip: true,
+              autoSkipPadding: 20
+            }
+          },
+          "y-degrees": {
+            type: "linear",
+            position: "left",
+            beginAtZero: true,
+            ticks: {
+              callback: function (value) {
+                return value + "°C";
+              },
+            },
+            title: {
+              display: true,
+              text: "Temperature (°C)",
+            },
+          },
+          "y-percentage": {
+            type: "linear",
+            position: "right",
+            beginAtZero: true,
+            ticks: {
+              callback: function (value) {
+                return value + "%";
+              },
+            },
+            title: {
+              display: true,
+              text: "Percentage (%)",
+            },
+            grid: {
+              drawOnChartArea: false,
+            },
+          },
+        },
+      },
+    });
+  };
+
+  const smoothData = (data, bucketMinutes = 30) => {
+    const buckets = {};
+    
+    // Group data into time buckets
+    data.forEach(point => {
+      const timestamp = new Date(point.time_stamp);
+      // Round to nearest bucket
+      timestamp.setMinutes(Math.floor(timestamp.getMinutes() / bucketMinutes) * bucketMinutes);
+      timestamp.setSeconds(0);
+      timestamp.setMilliseconds(0);
+      
+      const key = timestamp.toISOString();
+      if (!buckets[key]) {
+        buckets[key] = {
+          count: 0,
+          ext_temp: 0,
+          light: 0,
+          humidity: 0,
+          soil_temp: 0,
+          soil_moisture_1: 0,
+          soil_moisture_2: 0
+        };
+      }
+      
+      buckets[key].count++;
+      buckets[key].ext_temp += point.ext_temp;
+      buckets[key].light += point.light;
+      buckets[key].humidity += point.humidity;
+      buckets[key].soil_temp += point.soil_temp;
+      buckets[key].soil_moisture_1 += point.soil_moisture_1;
+      buckets[key].soil_moisture_2 += point.soil_moisture_2;
+    });
+    
+    // Calculate averages for each bucket
+    return Object.entries(buckets).map(([time, values]) => ({
+      time_stamp: time,
+      ext_temp: values.ext_temp / values.count,
+      light: values.light / values.count,
+      humidity: values.humidity / values.count,
+      soil_temp: values.soil_temp / values.count,
+      soil_moisture_1: values.soil_moisture_1 / values.count,
+      soil_moisture_2: values.soil_moisture_2 / values.count
+    })).sort((a, b) => new Date(a.time_stamp) - new Date(b.time_stamp));
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const startTime = new Date(timeRange.start);
+      const endTime = new Date(timeRange.end);
+      
+      const response = await fetch(
+        `http://52.14.140.110:3000/api/sensorReadSeries?plant_id=${plantId}&time_stamp1=${startTime.toISOString()}&time_stamp2=${endTime.toISOString()}`
+      );
+      
+      const data = await response.json();
+      const smoothedData = smoothData(data.result, bucketMinutes);
+      setSensorData(data.result);
+      
+      if (chartInstance.current) {
+        chartInstance.current.data.labels = smoothedData.map(d => d.time_stamp);
+        chartInstance.current.data.datasets[0].data = smoothedData.map(d => ({ x: d.time_stamp, y: d.ext_temp }));
+        chartInstance.current.data.datasets[1].data = smoothedData.map(d => ({ x: d.time_stamp, y: d.light }));
+        chartInstance.current.data.datasets[2].data = smoothedData.map(d => ({ x: d.time_stamp, y: d.humidity }));
+        chartInstance.current.data.datasets[3].data = smoothedData.map(d => ({ x: d.time_stamp, y: d.soil_temp }));
+        chartInstance.current.data.datasets[4].data = smoothedData.map(d => ({ x: d.time_stamp, y: d.soil_moisture_1 }));
+        chartInstance.current.data.datasets[5].data = smoothedData.map(d => ({ x: d.time_stamp, y: d.soil_moisture_2 }));
+        chartInstance.current.update();
+      }
+    } catch (error) {
+      console.error('Error fetching sensor data:', error);
+    }
+    setLoading(false);
+  };
+
+  const handleRefresh = () => {
+    fetchData();
+  };
+
+  return (
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Typography variant="h3" gutterBottom>
+        <SensorsIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+        Real-Time Monitoring
+      </Typography>
+      <Grid container spacing={4} sx={{ flexGrow: 1, minHeight: 0 }}>
+        <Grid item xs={12} md={8} sx={{ height: '100%' }}>
+          <Paper sx={{ 
+            p: 2, 
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <Box sx={{ flexGrow: 1, position: 'relative', minHeight: 0 }}>
+              <canvas ref={chartRef} style={{ position: 'absolute', width: '100%', height: '100%' }} />
+            </Box>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={4} sx={{ height: '100%' }}>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            style={{ height: '100%' }}
+          >
+            <Paper sx={{ p: 2, height: '100%' }}>
+              <Typography variant="h6" gutterBottom>
+                Chart Controls
+              </Typography>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Plant ID
+                </Typography>
+                <TextField
+                  type="number"
+                  value={plantId}
+                  onChange={(e) => setPlantId(e.target.value)}
+                  size="small"
+                  fullWidth
+                  sx={{ mb: 2 }}
+                />
+                
+                <Typography variant="subtitle2" gutterBottom>
+                  Time Range
+                </Typography>
+                <TextField
+                  label="Start Time"
+                  type="datetime-local"
+                  value={timeRange.start}
+                  onChange={(e) => setTimeRange(prev => ({ ...prev, start: e.target.value }))}
+                  size="small"
+                  fullWidth
+                  sx={{ mb: 1 }}
+                />
+                <TextField
+                  label="End Time"
+                  type="datetime-local"
+                  value={timeRange.end}
+                  onChange={(e) => setTimeRange(prev => ({ ...prev, end: e.target.value }))}
+                  size="small"
+                  fullWidth
+                  sx={{ mb: 2 }}
+                />
+                
+                <Typography variant="subtitle2" gutterBottom>
+                  Data Smoothing (minutes)
+                </Typography>
+                <TextField
+                  type="number"
+                  value={bucketMinutes}
+                  onChange={(e) => setBucketMinutes(Number(e.target.value))}
+                  size="small"
+                  fullWidth
+                  sx={{ mb: 2 }}
+                  inputProps={{ min: 1, max: 120 }}
+                />
+                
+                <Button
+                  variant="contained"
+                  onClick={handleRefresh}
+                  disabled={loading}
+                  fullWidth
+                >
+                  Update Chart
+                </Button>
+              </Box>
+              
+              {sensorData && sensorData[0] && (
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Latest Readings
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <WaterDropIcon sx={{ color: 'primary.main' }} />
+                    <Typography variant="body1">
+                      Soil Moisture: {sensorData[0].soil_moisture_1.toFixed(1)}%
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <DeviceThermostatIcon sx={{ color: 'primary.main' }} />
+                    <Typography variant="body1">
+                      Temperature: {sensorData[0].ext_temp.toFixed(1)}°C
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <LightbulbIcon sx={{ color: 'primary.main' }} />
+                    <Typography variant="body1">
+                      Light: {sensorData[0].light.toFixed(1)}%
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+            </Paper>
+          </motion.div>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+};
+
 
 const slides = [
   {
@@ -700,48 +1060,7 @@ const slides = [
   },
   {
     title: 'Live Data Demo',
-    content: (
-      <Box>
-        <Typography variant="h3" gutterBottom>
-          <SensorsIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
-          Real-Time Monitoring
-        </Typography>
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={8}>
-            <PlaceholderGraph color="secondary.main" />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Typography variant="h6" gutterBottom>
-                Live Sensor Data
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <WaterDropIcon sx={{ color: 'primary.main' }} />
-                <Typography variant="body1">
-                  Soil Moisture: 65%
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <DeviceThermostatIcon sx={{ color: 'primary.main' }} />
-                <Typography variant="body1">
-                  Temperature: 22°C
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <LightbulbIcon sx={{ color: 'primary.main' }} />
-                <Typography variant="body1">
-                  Light: 850 lux
-                </Typography>
-              </Box>
-            </motion.div>
-          </Grid>
-        </Grid>
-      </Box>
-    ),
+    content: <LiveDataDemo />
   },
    {
     title: 'Results',
