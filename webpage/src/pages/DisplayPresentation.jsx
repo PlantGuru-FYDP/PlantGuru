@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, IconButton, Typography, Paper, Grid, TextField, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, IconButton, Typography, Paper, Grid, TextField, Button, Select, MenuItem, FormControl, InputLabel, Modal } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -25,6 +25,7 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import CloseIcon from '@mui/icons-material/Close';
 import { Chart } from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
 
@@ -121,6 +122,69 @@ const SlideControls = styled(Box)({
   zIndex: 1000,
 });
 
+const ImageModal = ({ open, onClose, imageSrc }) => (
+  <Modal
+    open={open}
+    onClose={onClose}
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      p: 2
+    }}
+  >
+    <Box
+      sx={{
+        position: 'relative',
+        maxWidth: '90vw',
+        maxHeight: '90vh',
+        outline: 'none',
+        bgcolor: 'background.paper',
+        borderRadius: 2,
+        p: 2,
+        boxShadow: 24
+      }}
+    >
+      <IconButton
+        onClick={onClose}
+        sx={{
+          position: 'absolute',
+          right: 8,
+          top: 8,
+          bgcolor: 'background.paper',
+          '&:hover': { bgcolor: 'action.hover' }
+        }}
+      >
+        <CloseIcon />
+      </IconButton>
+      <img
+        src={imageSrc}
+        alt="Full size view"
+        style={{
+          maxWidth: '100%',
+          maxHeight: 'calc(90vh - 32px)',
+          objectFit: 'contain'
+        }}
+      />
+    </Box>
+  </Modal>
+);
+
+const ClickableImage = ({ src, alt, style, onClick }) => (
+  <img
+    src={src}
+    alt={alt}
+    onClick={onClick}
+    style={{
+      ...style,
+      cursor: 'pointer',
+      transition: 'transform 0.2s',
+      '&:hover': {
+        transform: 'scale(1.02)'
+      }
+    }}
+  />
+);
 
 const LiveDataDemo = () => {
   const chartRef = useRef(null);
@@ -548,6 +612,160 @@ const LiveDataDemo = () => {
   );
 };
 
+const MobileScreenshotCarousel = ({ handleImageClick }) => {
+  const [currentImage, setCurrentImage] = useState(0);
+
+  const mobileScreenshots = [
+    {
+      src: "/PlantGuru/presentation_images/screenshots/app_data.png",
+      alt: "Data View",
+      title: "Data Dashboard"
+    },
+    {
+      src: "/PlantGuru/presentation_images/screenshots/app_all_plants.png",
+      alt: "All Plants View",
+      title: "Plant Management"
+    },
+    {
+      src: "/PlantGuru/presentation_images/screenshots/app_plant.png",
+      alt: "Plant Details View",
+      title: "Plant Details"
+    }
+  ];
+
+  const handlePrevImage = () => {
+    setCurrentImage((prev) => (prev === 0 ? mobileScreenshots.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImage((prev) => (prev === mobileScreenshots.length - 1 ? 0 : prev + 1));
+  };
+
+  return (
+    <Box sx={{ 
+      mb: 4,
+      height: '60vh',
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      position: 'relative'
+    }}>
+      <Box sx={{
+        flex: 1,
+        width: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <IconButton 
+          sx={{ 
+            position: 'absolute', 
+            left: 16,
+            top: '50%', 
+            transform: 'translateY(-50%)',
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.9)'
+            },
+            zIndex: 2
+          }}
+          onClick={handlePrevImage}
+        >
+          <ArrowBackIcon />
+        </IconButton>
+
+        <Box sx={{
+          position: 'relative',
+          height: '100%',
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <AnimatePresence initial={false}>
+            <motion.div
+              key={currentImage}
+              style={{
+                position: 'absolute',
+                height: '100%',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -300, opacity: 0 }}
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 }
+              }}
+            >
+              <ClickableImage
+                src={mobileScreenshots[currentImage].src}
+                alt={mobileScreenshots[currentImage].alt}
+                onClick={() => handleImageClick(mobileScreenshots[currentImage].src)}
+                style={{ 
+                  height: '100%',
+                  width: 'auto',
+                  maxWidth: '100%',
+                  objectFit: 'contain',
+                  borderRadius: 8,
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                }}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </Box>
+
+        <IconButton 
+          sx={{ 
+            position: 'absolute', 
+            right: 16,
+            top: '50%', 
+            transform: 'translateY(-50%)',
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.9)'
+            },
+            zIndex: 2
+          }}
+          onClick={handleNextImage}
+        >
+          <ArrowForwardIcon />
+        </IconButton>
+      </Box>
+
+      <Typography variant="h6" align="center" sx={{ mt: 2 }}>
+        {mobileScreenshots[currentImage].title}
+      </Typography>
+
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        gap: 1,
+        mt: 2
+      }}>
+        {mobileScreenshots.map((_, index) => (
+          <Box
+            key={index}
+            onClick={() => setCurrentImage(index)}
+            sx={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              backgroundColor: currentImage === index ? 'primary.main' : 'grey.300',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s'
+            }}
+          />
+        ))}
+      </Box>
+    </Box>
+  );
+};
 
 const slides = [
   {
@@ -731,7 +949,7 @@ const slides = [
   },
   {
     title: 'System Overview',
-    content: (
+    content: (props) => (
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
@@ -748,7 +966,30 @@ const slides = [
               <Box sx={{ textAlign: 'center', mb: 2 }}>
                 <MemoryIcon sx={{ fontSize: '3rem', color: 'primary.main' }} />
               </Box>
-              <PlaceholderImage text="Embedded System" color="primary.main" />
+              <Box sx={{ 
+                height: '35vh',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <Box sx={{
+                  flex: 1,
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <ClickableImage 
+                    src="/PlantGuru/presentation_images/enclosure.png"
+                    alt="Embedded System"
+                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/enclosure.png")}
+                    style={{ 
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      borderRadius: 8,
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                </Box>
+              </Box>
               <Box sx={{ p: 2, borderLeft: 3, borderColor: 'primary.main', mt: 2 }}>
                 <Typography variant="h6" gutterBottom>
                   Embedded System
@@ -768,7 +1009,30 @@ const slides = [
               <Box sx={{ textAlign: 'center', mb: 2 }}>
                 <StorageIcon sx={{ fontSize: '3rem', color: 'primary.main' }} />
               </Box>
-              <PlaceholderImage text="Backend Server" color="primary.main" />
+              <Box sx={{ 
+                height: '35vh',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <Box sx={{
+                  flex: 1,
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <ClickableImage 
+                    src="/PlantGuru/presentation_images/data_model.png"
+                    alt="Backend Server"
+                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/data_model.png")}
+                    style={{ 
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      borderRadius: 8,
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                </Box>
+              </Box>
               <Box sx={{ p: 2, borderLeft: 3, borderColor: 'primary.main', mt: 2 }}>
                 <Typography variant="h6" gutterBottom>
                   Backend Server
@@ -788,7 +1052,34 @@ const slides = [
               <Box sx={{ textAlign: 'center', mb: 2 }}>
                 <PhoneIphoneIcon sx={{ fontSize: '3rem', color: 'primary.main' }} />
               </Box>
-              <PlaceholderImage text="Mobile App" color="primary.main" />
+              <Box sx={{ 
+                height: '35vh',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
+              }}>
+                <Box sx={{
+                  flex: 1,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  justifyContent: 'center'
+                }}>
+                  <ClickableImage 
+                    src="/PlantGuru/presentation_images/screenshots/app_data.png"
+                    alt="Mobile App Screenshots"
+                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/screenshots/app_data.png")}
+                    style={{ 
+                      height: '100%',
+                      width: 'auto',
+                      maxWidth: '100%',
+                      objectFit: 'contain',
+                      borderRadius: 8,
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                </Box>
+              </Box>
               <Box sx={{ p: 2, borderLeft: 3, borderColor: 'primary.main', mt: 2 }}>
                 <Typography variant="h6" gutterBottom>
                   Mobile App
@@ -808,7 +1099,30 @@ const slides = [
               <Box sx={{ textAlign: 'center', mb: 2 }}>
                 <QueryStatsIcon sx={{ fontSize: '3rem', color: 'primary.main' }} />
               </Box>
-              <PlaceholderImage text="Data Model" color="primary.main" />
+              <Box sx={{ 
+                height: '35vh',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <Box sx={{
+                  flex: 1,
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <ClickableImage 
+                    src="/PlantGuru/presentation_images/moisture_animation_purple_coleus_event3_hybrid-ezgif.com-video-to-gif-converter.gif"
+                    alt="Data Model"
+                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/moisture_animation_purple_coleus_event3_hybrid-ezgif.com-video-to-gif-converter.gif")}
+                    style={{ 
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      borderRadius: 8,
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                </Box>
+              </Box>
               <Box sx={{ p: 2, borderLeft: 3, borderColor: 'primary.main', mt: 2 }}>
                 <Typography variant="h6" gutterBottom>
                   Data Model
@@ -825,7 +1139,7 @@ const slides = [
   },
   {
     title: 'Implementation - Hardware',
-    content: (
+    content: (props) => (
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
@@ -839,7 +1153,30 @@ const slides = [
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <PlaceholderImage text="Hardware Photo" color="primary.light" />
+            <Box sx={{ 
+              height: '50vh',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{
+                flex: 1,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <ClickableImage 
+                  src="/PlantGuru/presentation_images/enclosure.png"
+                  alt="Hardware Photo"
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/enclosure.png")}
+                  style={{ 
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  }}
+                />
+              </Box>
+            </Box>
           </motion.div>
         </Grid>
         <Grid item xs={12} md={6}>
@@ -865,11 +1202,11 @@ const slides = [
   },
   {
     title: 'Implementation - Software',
-    content: (
+    content: (props) => (
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
-          <PhoneIphoneIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            <PhoneIphoneIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
             Software Architecture
           </Typography>
         </Grid>
@@ -879,9 +1216,7 @@ const slides = [
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <Box sx={{ mb: 4 }}>
-              <PlaceholderImage text="Mobile App Screenshots" color="primary.light" />
-            </Box>
+            <MobileScreenshotCarousel handleImageClick={props.handleImageClick} />
           </motion.div>
         </Grid>
         <Grid item xs={12} md={6}>
@@ -907,7 +1242,7 @@ const slides = [
   },
   {
     title: 'Implementation - Data',
-    content: (
+    content: (props) => (
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
@@ -921,7 +1256,30 @@ const slides = [
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <PlaceholderImage text="Data Analysis Visualization" color="primary.light" />
+            <Box sx={{ 
+              height: '50vh',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{
+                flex: 1,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <ClickableImage 
+                  src="/PlantGuru/presentation_images/data_model.png"
+                  alt="Model Prediction Accuracy"
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/data_model.png")}
+                  style={{ 
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  }}
+                />
+              </Box>
+            </Box>
           </motion.div>
         </Grid>
         <Grid item xs={12} md={4}>
@@ -947,7 +1305,7 @@ const slides = [
   },
   {
     title: 'Demo - Software',
-    content: (
+    content: (props) => (
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
@@ -960,12 +1318,32 @@ const slides = [
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <img 
-                src="/screenshots/dashboard.png" 
-                alt="Dashboard Screenshot"
-                style={{ width: '100%', maxWidth: 500, borderRadius: 8, boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}
-              />
+            <Box sx={{ 
+              textAlign: 'center', 
+              mb: 4,
+              height: '60vh',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{
+                flex: 1,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <ClickableImage 
+                  src="/PlantGuru/presentation_images/screenshots/app_data.png" 
+                  alt="App Data View"
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/screenshots/app_data.png")}
+                  style={{ 
+                    height: '100%',
+                    width: 'auto',
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  }}
+                />
+              </Box>
               <Typography variant="h6" sx={{ mt: 2 }}>
                 Real-time Dashboard
               </Typography>
@@ -981,17 +1359,37 @@ const slides = [
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <img 
-                src="/screenshots/device-management.png"
-                alt="Device Management Screenshot" 
-                style={{ width: '100%', maxWidth: 500, borderRadius: 8, boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}
-              />
+            <Box sx={{ 
+              textAlign: 'center', 
+              mb: 4,
+              height: '60vh',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{
+                flex: 1,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <ClickableImage 
+                  src="/PlantGuru/presentation_images/screenshots/app_all_plants.png"
+                  alt="All Plants View" 
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/screenshots/app_all_plants.png")}
+                  style={{ 
+                    height: '100%',
+                    width: 'auto',
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  }}
+                />
+              </Box>
               <Typography variant="h6" sx={{ mt: 2 }}>
-                Device Management
+                Plant Management
               </Typography>
               <Typography variant="body1">
-                Easily configure your PlantGuru devices, set watering schedules, and receive notifications about your plant's needs
+                Easily manage all your plants and monitor their health status at a glance
               </Typography>
             </Box>
           </motion.div>
@@ -1001,7 +1399,7 @@ const slides = [
   },
   {
     title: 'Demo - Hardware',
-    content: (
+    content: (props) => (
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
@@ -1014,12 +1412,31 @@ const slides = [
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <img 
-                src="/screenshots/hardware-prototype.png"
-                alt="Hardware Prototype"
-                style={{ width: '100%', maxWidth: 500, borderRadius: 8, boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}
-              />
+            <Box sx={{ 
+              textAlign: 'center', 
+              mb: 4,
+              height: '50vh',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{
+                flex: 1,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <ClickableImage 
+                  src="/PlantGuru/presentation_images/enclosure.png"
+                  alt="Hardware Prototype"
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/enclosure.png")}
+                  style={{ 
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  }}
+                />
+              </Box>
               <Typography variant="h6" sx={{ mt: 2 }}>
                 Working Prototype
               </Typography>
@@ -1035,12 +1452,31 @@ const slides = [
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <img 
-                src="/screenshots/pcb-design.png"
-                alt="PCB Design"
-                style={{ width: '100%', maxWidth: 500, borderRadius: 8, boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}
-              />
+            <Box sx={{ 
+              textAlign: 'center', 
+              mb: 4,
+              height: '50vh',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{
+                flex: 1,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <ClickableImage 
+                  src="/PlantGuru/presentation_images/pcb.png"
+                  alt="PCB Design"
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/pcb.png")}
+                  style={{ 
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  }}
+                />
+              </Box>
               <Typography variant="h6" sx={{ mt: 2 }}>
                 Custom PCB Design
               </Typography>
@@ -1080,8 +1516,6 @@ const slides = [
       </Grid>
     ),
   },
-
-
   {
     title: 'Product Video',
     content: (
@@ -1133,7 +1567,7 @@ const slides = [
   },
    {
     title: 'Results',
-    content: (
+    content: (props) => (
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
@@ -1147,10 +1581,33 @@ const slides = [
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <Box sx={{ mb: 4 }}>
-              <PlaceholderGraph color="success.light" />
+            <Box sx={{ mb: 2 }}>
+              <Box sx={{ 
+                height: '40vh',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <Box sx={{
+                  flex: 1,
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <ClickableImage 
+                    src="/PlantGuru/presentation_images/data_model.png"
+                    alt="Model Prediction Accuracy"
+                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/data_model.png")}
+                    style={{ 
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      borderRadius: 8,
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                </Box>
+              </Box>
               <Typography variant="body2" align="center" sx={{ mt: 1 }}>
-                Model Prediction Accuracy
+                Model Prediction Results
               </Typography>
             </Box>
           </motion.div>
@@ -1161,10 +1618,33 @@ const slides = [
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <Box sx={{ mb: 4 }}>
-              <PlaceholderGraph color="primary.light" />
+            <Box sx={{ mb: 2 }}>
+              <Box sx={{ 
+                height: '40vh',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <Box sx={{
+                  flex: 1,
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <ClickableImage 
+                    src="/PlantGuru/presentation_images/moisture_animation_purple_coleus_event3_hybrid-ezgif.com-video-to-gif-converter.gif"
+                    alt="System Performance"
+                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/moisture_animation_purple_coleus_event3_hybrid-ezgif.com-video-to-gif-converter.gif")}
+                    style={{ 
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      borderRadius: 8,
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                </Box>
+              </Box>
               <Typography variant="body2" align="center" sx={{ mt: 1 }}>
-                System Performance Metrics
+                Real-time Soil Moisture Prediction
               </Typography>
             </Box>
           </motion.div>
@@ -1219,6 +1699,14 @@ const slides = [
 
 export default function DisplayPresentation() {
   const [[page, direction], setPage] = useState([0, 0]);
+  const [currentImage, setCurrentImage] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  const handleImageClick = (imageSrc) => {
+    setSelectedImage(imageSrc);
+    setModalOpen(true);
+  };
 
   const paginate = (newDirection) => {
     const newPage = page + newDirection;
@@ -1263,6 +1751,12 @@ export default function DisplayPresentation() {
 
   return (
     <FullscreenContainer>
+      <ImageModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        imageSrc={selectedImage}
+      />
+
       <AnimatePresence initial={false} custom={direction}>
         <MotionContainer
           key={page}
@@ -1302,7 +1796,9 @@ export default function DisplayPresentation() {
               }
             }}
           >
-            {slides[page].content}
+            {typeof slides[page].content === 'function' 
+              ? slides[page].content({ handleImageClick }) 
+              : slides[page].content}
           </Paper>
         </MotionContainer>
       </AnimatePresence>
