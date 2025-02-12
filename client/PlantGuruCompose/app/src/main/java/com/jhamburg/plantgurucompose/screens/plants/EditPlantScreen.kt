@@ -38,6 +38,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.Deferred
+import com.jhamburg.plantgurucompose.utils.ImageStorageManager
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -146,13 +147,36 @@ fun EditPlantScreen(
     }
 
         var showPermissionDialog by remember { mutableStateOf(false) }
+    var permissionMessage by remember { mutableStateOf("") }
     
-        val cameraPermissionLauncher = rememberLauncherForActivityResult(
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        when {
+            permissions.getOrDefault(Manifest.permission.CAMERA, false) &&
+            permissions.getOrDefault(Manifest.permission.READ_MEDIA_IMAGES, false) -> {
+                cameraLauncher.launch(tempImageUri)
+            }
+            !permissions.getOrDefault(Manifest.permission.CAMERA, false) -> {
+                permissionMessage = "Camera permission is needed to take photos of your plants."
+                showPermissionDialog = true
+            }
+            !permissions.getOrDefault(Manifest.permission.READ_MEDIA_IMAGES, false) -> {
+                permissionMessage = "Storage permission is needed to save photos of your plants."
+                showPermissionDialog = true
+            }
+        }
+    }
+
+    val galleryPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            cameraLauncher.launch(tempImageUri)
+            photoPickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
         } else {
+            permissionMessage = "Storage permission is needed to select photos from gallery."
             showPermissionDialog = true
         }
     }
@@ -293,36 +317,51 @@ fun EditPlantScreen(
                         if (validateInputs() && !isSaving) {
                             hasValidationErrors = false
                             isSaving = true
-                            Log.d("EditPlantScreen", """
-                                Save initiated:
-                                - Original name: $originalPlantName
-                                - New name: $plantName
-                                - Plant ID: $plantId
-                            """.trimIndent())
                             
                             scope.launch {
                                 try {
                                     val nameChanged = plantName.trim() != originalPlantName
+                                    val imageManager = ImageStorageManager(context)
+
+                                    // Handle image changes
+                                    if (imageUri != currentDetails?.imageUri?.let { Uri.parse(it) }) {
+                                        // Delete old image if it exists
+                                        currentDetails?.imageUri?.let {
+                                            imageManager.deleteImage(plantId)
+                                        }
+
+                                        // Save new image if selected
+                                        imageUri?.let { uri ->
+                                            val newImageUri = imageManager.saveImage(uri, plantId)
+                                            currentDetails?.let { details ->
+                                                plantViewModel.updatePlant(
+                                                    plantId = plantId,
+                                                    plantName = plantName.trim()
+                                                )
+                                            }
+                                        }
+                                    }
                                     
                                     if (nameChanged) {
-                                        Log.d("EditPlantScreen", """
-                                            Starting name update:
-                                            - Original name: $originalPlantName
-                                            - New name: $plantName
-                                            - Plant ID: $plantId
-                                        """.trimIndent())
-                                        
                                         plantViewModel.updatePlant(
                                             plantId = plantId,
-                                            plantName = plantName.trim()
+                                            plantName = plantName.trim(),
+
                                         )
-                                        
-                                        Log.d("EditPlantScreen", "Name update completed")
                                     }
 
-                                    navController.previousBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("refresh", true)
+                                    // save plant details changes also - type and sub type
+                                    plantViewModel.savePlantAdditionalDetails(
+                                        plantId = plantId,
+                                        details = PlantAdditionalDetails(
+                                            plantType = selectedCategory?.toString() ?: "",
+                                            scientificName = selectedSubType?.toString() ?: "",
+                                            createdOn = System.currentTimeMillis()
+
+                                        )
+                                    )
+
+                                    plantViewModel.setNeedsRefresh(true)
                                     navController.navigateUp()
                                 } catch (e: Exception) {
                                     Log.e("EditPlantScreen", "Error saving changes: ${e.message}")
@@ -369,6 +408,7 @@ fun EditPlantScreen(
                     onClick = {
                         scope.launch {
                             plantViewModel.deletePlant(plantId)
+                            plantViewModel.setNeedsRefresh(true)
                             navController.navigate("plantList") {
                                 popUpTo("plantList") { inclusive = true }
                             }
@@ -398,15 +438,26 @@ fun EditPlantScreen(
                     TextButton(
                         onClick = {
                             showImagePicker = false
-                            when (PackageManager.PERMISSION_GRANTED) {
-                                ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.CAMERA
-                                ) -> {
+                            val cameraPermissionGranted = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.CAMERA
+                            ) == PackageManager.PERMISSION_GRANTED
+                            val storagePermissionGranted = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.READ_MEDIA_IMAGES
+                            ) == PackageManager.PERMISSION_GRANTED
+
+                            when {
+                                cameraPermissionGranted && storagePermissionGranted -> {
                                     cameraLauncher.launch(tempImageUri)
                                 }
                                 else -> {
-                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                    cameraPermissionLauncher.launch(
+                                        arrayOf(
+                                            Manifest.permission.CAMERA,
+                                            Manifest.permission.READ_MEDIA_IMAGES
+                                        )
+                                    )
                                 }
                             }
                         },
@@ -417,9 +468,19 @@ fun EditPlantScreen(
                     TextButton(
                         onClick = {
                             showImagePicker = false
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
+                            when (PackageManager.PERMISSION_GRANTED) {
+                                ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.READ_MEDIA_IMAGES
+                                ) -> {
+                                    photoPickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                }
+                                else -> {
+                                    galleryPermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
+                                }
+                            }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -439,10 +500,9 @@ fun EditPlantScreen(
         if (showPermissionDialog) {
         AlertDialog(
             onDismissRequest = { showPermissionDialog = false },
-            title = { Text("Camera Permission Required") },
+            title = { Text("Permission Required") },
             text = { 
-                Text("Camera permission is needed to take photos of your plants. " +
-                     "Please grant permission in Settings to use this feature.")
+                Text(permissionMessage + " Please grant permission in Settings to use this feature.")
             },
             confirmButton = {
                 TextButton(

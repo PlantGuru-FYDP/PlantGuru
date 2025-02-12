@@ -22,7 +22,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +50,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.jhamburg.plantgurucompose.models.PlantAdditionalDetails
+import com.jhamburg.plantgurucompose.models.PlantCategory
+import com.jhamburg.plantgurucompose.models.PlantSubType
+import com.jhamburg.plantgurucompose.utils.ImageStorageManager
 import com.jhamburg.plantgurucompose.viewmodels.PlantViewModel
 import kotlinx.coroutines.launch
 import java.io.File
@@ -56,15 +62,16 @@ import java.time.LocalDateTime
 @Composable
 fun CreatePlantScreen(navController: NavController, userId: Int) {
     var plantName by remember { mutableStateOf("") }
-    var age by remember { mutableStateOf("") }
-    var scientificName by remember { mutableStateOf("") }
-    var plantType by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var careInstructions by remember { mutableStateOf("") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var showImagePicker by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
+    
+    // Plant type selection states
+    var showCategoryDropdown by remember { mutableStateOf(false) }
+    var selectedCategory by remember { mutableStateOf<PlantCategory?>(null) }
+    var showSubTypeDropdown by remember { mutableStateOf(false) }
+    var selectedSubType by remember { mutableStateOf<PlantSubType?>(null) }
 
     val plantViewModel: PlantViewModel = hiltViewModel()
     val context = LocalContext.current
@@ -187,42 +194,64 @@ fun CreatePlantScreen(navController: NavController, userId: Int) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            OutlinedTextField(
-                value = age,
-                onValueChange = { age = it },
-                label = { Text("Age (in days)") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            ExposedDropdownMenuBox(
+                expanded = showCategoryDropdown,
+                onExpandedChange = { showCategoryDropdown = it }
+            ) {
+                OutlinedTextField(
+                    value = selectedCategory?.toString() ?: "",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Plant Type") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = showCategoryDropdown,
+                    onDismissRequest = { showCategoryDropdown = false }
+                ) {
+                    PlantCategory.values().forEach { category ->
+                        DropdownMenuItem(
+                            text = { Text(category.toString()) },
+                            onClick = {
+                                selectedCategory = category
+                                selectedSubType = null
+                                showCategoryDropdown = false
+                            }
+                        )
+                    }
+                }
+            }
 
-            OutlinedTextField(
-                value = scientificName,
-                onValueChange = { scientificName = it },
-                label = { Text("Scientific Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = plantType,
-                onValueChange = { plantType = it },
-                label = { Text("Plant Type") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Description") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3
-            )
-
-            OutlinedTextField(
-                value = careInstructions,
-                onValueChange = { careInstructions = it },
-                label = { Text("Care Instructions") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3
-            )
+            selectedCategory?.let { category ->
+                ExposedDropdownMenuBox(
+                    expanded = showSubTypeDropdown,
+                    onExpandedChange = { showSubTypeDropdown = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedSubType?.toString() ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Sub Type") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showSubTypeDropdown) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showSubTypeDropdown,
+                        onDismissRequest = { showSubTypeDropdown = false }
+                    ) {
+                        PlantSubType.getSubTypesForCategory(category).forEach { subType ->
+                            DropdownMenuItem(
+                                text = { Text(subType.toString()) },
+                                onClick = {
+                                    selectedSubType = subType
+                                    showSubTypeDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
 
             Button(
                 onClick = {
@@ -230,37 +259,45 @@ fun CreatePlantScreen(navController: NavController, userId: Int) {
                         errorMessage = "Plant name is required"
                         return@Button
                     }
-                    if (age.isBlank() || age.toIntOrNull() == null) {
-                        errorMessage = "Valid age is required"
-                        return@Button
-                    }
                     scope.launch {
                         try {
                             isLoading = true
+                            val imageManager = ImageStorageManager(context)
+                            var tempUri: Uri? = null
+                            val tempImageUri = imageUri?.let { uri ->
+                                imageManager.saveImage(uri, -1).also { tempUri = it }
+                            }
                             val (plantId, provisionToken) = plantViewModel.createPlant(
                                 userId = userId,
                                 plantName = plantName.trim(),
-                                age = age.toIntOrNull() ?: 0,
                                 lastWatered = LocalDateTime.now(),
-                                nextWateringTime = LocalDateTime.now().plusDays(7)
-                            )
-
-                            plantViewModel.savePlantAdditionalDetails(
-                                plantId = plantId,
-                                details = PlantAdditionalDetails(
-                                    scientificName = scientificName,
-                                    plantType = plantType,
+                                nextWateringTime = LocalDateTime.now().plusDays(7),
+                                additionalDetails = PlantAdditionalDetails(
+                                    scientificName = "",
+                                    plantType = selectedSubType?.toString() ?: selectedCategory?.toString() ?: "",
                                     createdOn = System.currentTimeMillis(),
-                                    description = description,
-                                    careInstructions = careInstructions,
-                                    imageUri = imageUri?.toString()
+                                    imageUri = null // Don't set the URI yet
                                 )
                             )
 
-                            navController.navigate("ble_provision_landing/$plantId/$provisionToken")
+                            // Now that we have the plantId, save the image with the correct ID
+                            val finalImageUri = tempUri?.let { uri ->
+                                imageManager.saveImage(uri, plantId)
+                            }
+                            
+                            // Clean up the temporary image
+                            imageManager.deleteImage(-1)
 
+                            plantViewModel.setNeedsRefresh(true)
+                            if (provisionToken.isNotBlank()) {
+                                navController.navigate("ble_provision_landing/$plantId/$provisionToken")
+                            } else {
+                                navController.navigate("plantDetail/$plantId") {
+                                    popUpTo("createPlant/{userId}") { inclusive = true }
+                                }
+                            }
                         } catch (e: Exception) {
-                            Log.e("CreatePlantScreen", "Failed to create plant", e)
+                            Log.e("CreatePlantScreen", "Error creating plant", e)
                             errorMessage = "Failed to create plant: ${e.message}"
                         } finally {
                             isLoading = false
@@ -268,7 +305,7 @@ fun CreatePlantScreen(navController: NavController, userId: Int) {
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading && plantName.isNotBlank() && age.isNotBlank() && age.toIntOrNull() != null
+                enabled = !isLoading && plantName.isNotBlank()
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(

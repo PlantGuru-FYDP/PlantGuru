@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
+import android.util.Log
 import com.jhamburg.plantgurucompose.models.User
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -24,14 +25,18 @@ class AuthManager @Inject constructor(
     )
 
     fun saveAuthToken(token: String) {
+        Log.d("AuthManager", "Saving new auth token")
         prefs.edit().putString(KEY_AUTH_TOKEN, token).apply()
     }
 
     fun getAuthToken(): String? {
-        return prefs.getString(KEY_AUTH_TOKEN, null)
+        val token = prefs.getString(KEY_AUTH_TOKEN, null)
+        Log.d("AuthManager", "Retrieved auth token: ${if (token != null) "present" else "null"}")
+        return token
     }
 
     fun saveUser(user: User) {
+        Log.d("AuthManager", "Saving user data - ID: ${user.userId}, Name: ${user.name}")
         with(prefs.edit()) {
             putInt(KEY_USER_ID, user.userId)
             putString(KEY_USER_NAME, user.name)
@@ -44,9 +49,12 @@ class AuthManager @Inject constructor(
 
     fun getCurrentUser(): User? {
         val userId = prefs.getInt(KEY_USER_ID, -1)
-        if (userId == -1) return null
+        if (userId == -1) {
+            Log.d("AuthManager", "No current user found")
+            return null
+        }
 
-        return User(
+        val user = User(
             userId = userId,
             name = prefs.getString(KEY_USER_NAME, "") ?: "",
             email = prefs.getString(KEY_USER_EMAIL, "") ?: "",
@@ -54,18 +62,25 @@ class AuthManager @Inject constructor(
             address = prefs.getString(KEY_USER_ADDRESS, null),
             phoneNumber = prefs.getString(KEY_USER_PHONE, null)
         )
+        Log.d("AuthManager", "Retrieved current user - ID: ${user.userId}, Name: ${user.name}")
+        return user
     }
 
     fun getCurrentUserId(): Int {
-        return prefs.getInt(KEY_USER_ID, -1)
+        val userId = prefs.getInt(KEY_USER_ID, -1)
+        Log.d("AuthManager", "Retrieved current user ID: $userId")
+        return userId
     }
 
     fun clearAuth() {
+        Log.d("AuthManager", "Clearing all authentication data")
         prefs.edit().clear().apply()
     }
 
     fun isLoggedIn(): Boolean {
-        return getAuthToken() != null && getCurrentUserId() != -1
+        val loggedIn = getAuthToken() != null && getCurrentUserId() != -1
+        Log.d("AuthManager", "Checking login status: $loggedIn")
+        return loggedIn
     }
 
     companion object {

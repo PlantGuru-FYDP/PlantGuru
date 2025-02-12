@@ -21,6 +21,7 @@ import android.util.Patterns
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import android.util.Log
 
 @SuppressLint("RestrictedApi")
 @Composable
@@ -33,11 +34,25 @@ fun LoginScreen(navController: NavController) {
     
     val focusManager = LocalFocusManager.current
 
-    LaunchedEffect(isLoading) {
-        if (isLoading) {
-            navController.enableOnBackPressed(false)
-        } else {
-            navController.enableOnBackPressed(true)
+    LaunchedEffect(loginState) {
+        when (loginState) {
+            is LoginState.Loading -> {
+                Log.d("LoginScreen", "Attempting login with email: ${email.take(3)}...${email.takeLastWhile { it != '@' }}")
+                navController.enableOnBackPressed(false)
+            }
+            is LoginState.Success -> {
+                val user = (loginState as LoginState.Success).user
+                Log.d("LoginScreen", "Login successful for user: ${user.name} (ID: ${user.userId})")
+                navController.enableOnBackPressed(true)
+            }
+            is LoginState.Error -> {
+                val error = (loginState as LoginState.Error).message
+                Log.e("LoginScreen", "Login failed: $error")
+                navController.enableOnBackPressed(true)
+            }
+            else -> {
+                navController.enableOnBackPressed(true)
+            }
         }
     }
     

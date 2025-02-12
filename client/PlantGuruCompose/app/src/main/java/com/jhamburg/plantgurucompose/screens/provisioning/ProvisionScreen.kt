@@ -280,7 +280,9 @@ class ProvisionViewModel @Inject constructor(
                                                 viewModelScope.launch {
                                                     Log.d("ProvisionViewModel", "Status update successful")
                                                     isProvisioningCompleted = true
+                                                    val completedSteps = List(ProvisionStep.values().size) { StepState.COMPLETED }
                                                     _uiState.value = _uiState.value.copy(
+                                                        steps = completedSteps,
                                                         isProvisioningCompleted = true,
                                                         isDeviceDisconnected = false
                                                     )
@@ -291,7 +293,9 @@ class ProvisionViewModel @Inject constructor(
                                                 viewModelScope.launch {
                                                     Log.e("ProvisionViewModel", "Failed to update status", e)
                                                     isProvisioningCompleted = true
+                                                    val completedSteps = List(ProvisionStep.values().size) { StepState.COMPLETED }
                                                     _uiState.value = _uiState.value.copy(
+                                                        steps = completedSteps,
                                                         isProvisioningCompleted = true,
                                                         isDeviceDisconnected = false
                                                     )
@@ -302,7 +306,9 @@ class ProvisionViewModel @Inject constructor(
                                 } catch (e: Exception) {
                                     Log.e("ProvisionViewModel", "Error updating status", e)
                                     isProvisioningCompleted = true
+                                    val completedSteps = List(ProvisionStep.values().size) { StepState.COMPLETED }
                                     _uiState.value = _uiState.value.copy(
+                                        steps = completedSteps,
                                         isProvisioningCompleted = true,
                                         isDeviceDisconnected = false
                                     )
@@ -482,6 +488,9 @@ fun ProvisionScreen(
     if (uiState.finishActivity) {
         LaunchedEffect(Unit) {
             user?.userId?.let { userId ->
+                navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set("refresh", true)
                 navController.navigate("plantList") {
                     popUpTo("plantList") {
                         inclusive = false
@@ -511,6 +520,9 @@ fun ProvisionScreen(
         AlertDialog(
             onDismissRequest = { 
                 user?.userId?.let { userId ->
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("refresh", true)
                     navController.navigate("plantList") {
                         popUpTo("plantList") {
                             inclusive = false
@@ -523,6 +535,9 @@ fun ProvisionScreen(
             confirmButton = {
                 TextButton(onClick = {
                     user?.userId?.let { userId ->
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("refresh", true)
                         navController.navigate("plantList") {
                             popUpTo("plantList") {
                                 inclusive = false

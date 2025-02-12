@@ -345,9 +345,6 @@ fun WifiCredentialsDialog(
 ) {
     var ssid by remember { mutableStateOf(networkName) }
     var networkPassword by remember { mutableStateOf("246979ED94E6") }
-    var isEnterpriseWifi by remember { mutableStateOf(false) }
-    var identity by remember { mutableStateOf("") }
-    var userPassword by remember { mutableStateOf("") }
     var hasError by remember { mutableStateOf(false) }
 
     AlertDialog(
@@ -366,61 +363,19 @@ fun WifiCredentialsDialog(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                if (!isEnterpriseWifi) {
-                    OutlinedTextField(
-                        value = networkPassword,
-                        onValueChange = { networkPassword = it },
-                        label = { Text("Network Password") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                if (isEnterpriseWifi) {
-                    OutlinedTextField(
-                        value = identity,
-                        onValueChange = { identity = it },
-                        label = { Text("Identity (e.g. user@domain.com)") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = userPassword,
-                        onValueChange = { userPassword = it },
-                        label = { Text("User Password") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                OutlinedTextField(
+                    value = networkPassword,
+                    onValueChange = { networkPassword = it },
+                    label = { Text("Network Password") },
+                    visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
-                ) {
-                    Checkbox(
-                        checked = isEnterpriseWifi,
-                        onCheckedChange = { isEnterpriseWifi = it }
-                    )
-                    Text("Enterprise WiFi (e.g. eduroam)")
-                }
+                )
             }
         },
         confirmButton = {
             Button(
                 onClick = { 
-                    if (isEnterpriseWifi) {
-                        onProvision(ssid, null, true, identity, userPassword)
-                    } else {
-                        onProvision(ssid, networkPassword, false, null, null)
-                    }
+                    onProvision(ssid, networkPassword, false, null, null)
                 }
             ) {
                 Text("Connect")

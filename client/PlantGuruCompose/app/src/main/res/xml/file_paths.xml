@@ -2,7 +2,10 @@
 <paths>
     <files-path
         name="images"
-        path="images" />
+        path="images/" />
+    <files-path
+        name="plant_images"
+        path="plant_images/" />
     <cache-path
         name="cache"
         path="." />

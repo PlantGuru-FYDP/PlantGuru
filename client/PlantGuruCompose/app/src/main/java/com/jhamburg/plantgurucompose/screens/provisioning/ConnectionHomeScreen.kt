@@ -12,6 +12,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
@@ -205,15 +206,24 @@ fun checkPermissions(
     context: Context,
     requestPermissionsLauncher: ActivityResultLauncher<Array<String>>
 ): Boolean {
-    val permissionsNeeded = listOf(
-        Manifest.permission.BLUETOOTH,
-        Manifest.permission.BLUETOOTH_ADMIN,
-        Manifest.permission.BLUETOOTH_SCAN,
-        Manifest.permission.BLUETOOTH_CONNECT,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    )
+    val basePermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        // Android 12 (S) and above
+        listOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT
+        )
+    } else {
+        // Android 11 and below
+        listOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN
+        )
+    }
 
-    val permissionsToRequest = permissionsNeeded.filter {
+    // Location permission is required for BLE scanning on all Android versions
+    val permissions = basePermissions + Manifest.permission.ACCESS_FINE_LOCATION
+
+    val permissionsToRequest = permissions.filter {
         ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
     }
 
@@ -313,11 +323,24 @@ fun startScanning(
 }
 
 private fun checkRequiredPermissions(context: Context): Boolean {
-    return listOf(
-        Manifest.permission.BLUETOOTH_SCAN,
-        Manifest.permission.BLUETOOTH_CONNECT,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    ).all {
+    val basePermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        // Android 12 (S) and above
+        listOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT
+        )
+    } else {
+        // Android 11 and below
+        listOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN
+        )
+    }
+
+    // Location permission is required for BLE scanning on all Android versions
+    val permissions = basePermissions + Manifest.permission.ACCESS_FINE_LOCATION
+
+    return permissions.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }
 }

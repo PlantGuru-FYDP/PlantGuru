@@ -90,6 +90,7 @@ fun PlantSensorsTab(
             listOf(
                 SensorType.SOIL_MOISTURE,
                 SensorType.SOIL_TEMP,
+                SensorType.EXTERNAL_TEMP,
                 SensorType.LIGHT,
                 SensorType.HUMIDITY
             ).forEachIndexed { index, type ->
@@ -105,9 +106,9 @@ fun PlantSensorsTab(
                                 when (type) {
                                     SensorType.SOIL_MOISTURE -> R.drawable.baseline_water_24
                                     SensorType.SOIL_TEMP -> R.drawable.baseline_device_thermostat_24
+                                    SensorType.EXTERNAL_TEMP -> R.drawable.baseline_air_24
                                     SensorType.LIGHT -> R.drawable.baseline_sunny_24
                                     SensorType.HUMIDITY -> R.drawable.baseline_water_24
-                                    else -> R.drawable.baseline_device_thermostat_24
                                 }
                             ),
                             contentDescription = type.label
@@ -115,44 +116,6 @@ fun PlantSensorsTab(
                     },
                     text = { Text(type.label) }
                 )
-            }
-        }
-
-        if (listOf(SensorType.SOIL_MOISTURE, SensorType.HUMIDITY).contains(selectedSensorType)) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.baseline_water_24),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            "Watering Events",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                    Switch(
-                        checked = showWateringEvents,
-                        onCheckedChange = { showWateringEvents = it }
-                    )
-                }
             }
         }
 
@@ -196,6 +159,44 @@ fun PlantSensorsTab(
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
+                }
+            }
+        }
+
+        if (listOf(SensorType.SOIL_MOISTURE, SensorType.HUMIDITY).contains(selectedSensorType)) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_water_24),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            "Watering Events",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    Switch(
+                        checked = showWateringEvents,
+                        onCheckedChange = { showWateringEvents = it }
+                    )
                 }
             }
         }

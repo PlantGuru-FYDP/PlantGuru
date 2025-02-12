@@ -657,8 +657,8 @@ fun PlantOverviewTab(
                         sensorType = "ext_temp",
                         sensorHealthState = sensorHealthStates["ext_temp"],
                         sensorData = sensorData,
-                        icon = R.drawable.baseline_device_thermostat_24,
-                        label = "Temperature",
+                        icon = R.drawable.baseline_air_24,
+                        label = "Air Temp",
                         valueFormatter = { "${it.toInt()}°C" }
                     )
                 }

@@ -140,9 +140,17 @@ fun PlantListScreen(
     val plants by plantViewModel.plants.collectAsState()
     val loading by plantViewModel.loading.collectAsState()
     val isUpdating by plantViewModel.isUpdating.collectAsState()
+    val needsRefresh by plantViewModel.needsRefresh.collectAsState()
+
+    var isRefreshingList by remember { mutableStateOf(false) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
+    var previousLifecycleState by remember { mutableStateOf<Lifecycle.State?>(null) }
+    var isFirstResume by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
-        Log.d("PlantListScreen", "Initial LaunchedEffect triggered")
+        Log.d("PlantListScreen", "Initial screen entry")
         if (!plantViewModel.isLoggedIn()) {
             Log.d("PlantListScreen", "User not logged in, navigating to login")
             navController.navigate("login") {
@@ -150,28 +158,55 @@ fun PlantListScreen(
             }
             return@LaunchedEffect
         }
-        if (plants.isEmpty()) {
-            plantViewModel.getPlants(userId)
+
+        userId?.let { uid ->
+            isRefreshingList = true
+            try {
+                Log.d("PlantListScreen", "Initial load for user $uid")
+                plantViewModel.getPlants(uid, forceRefresh = true)
+            } catch (e: Exception) {
+                Log.e("PlantListScreen", "Error refreshing plants", e)
+            } finally {
+                isRefreshingList = false
+            }
         }
     }
 
-    var isFirstResume by remember { mutableStateOf(true) }
-
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
-    var previousLifecycleState by remember { mutableStateOf<Lifecycle.State?>(null) }
+    LaunchedEffect(navController.currentBackStackEntry) {
+        Log.d("PlantListScreen", "Navigation triggered")
+        userId?.let { uid ->
+            isRefreshingList = true
+            try {
+                Log.d("PlantListScreen", "Navigation refresh for user $uid")
+                plantViewModel.getPlants(uid, forceRefresh = true)
+            } catch (e: Exception) {
+                Log.e("PlantListScreen", "Error refreshing plants", e)
+            } finally {
+                isRefreshingList = false
+            }
+        }
+    }
 
     LaunchedEffect(lifecycleState) {
         if (lifecycleState == Lifecycle.State.RESUMED) {
             if (isFirstResume) {
                 isFirstResume = false
-            } else if (previousLifecycleState == Lifecycle.State.STARTED &&
-                plants.isNotEmpty()
-            ) {
-                plantViewModel.getPlants(userId, forceRefresh = true)
+            } else if (previousLifecycleState == Lifecycle.State.STARTED) {
+                Log.d("PlantListScreen", "Screen resumed, refreshing data")
+                userId?.let { uid ->
+                    plantViewModel.getPlants(uid, forceRefresh = true)
+                }
             }
         }
         previousLifecycleState = lifecycleState
+    }
+
+    LaunchedEffect(needsRefresh) {
+        Log.d("PlantListScreen", "needsRefresh changed to: $needsRefresh")
+        userId?.let { uid ->
+            plantViewModel.getPlants(uid, forceRefresh = true)
+        }
+        plantViewModel.setNeedsRefresh(false)
     }
 
     var isRefreshing by remember { mutableStateOf(false) }
@@ -207,25 +242,6 @@ fun PlantListScreen(
             Error: $error
         """.trimIndent()
         )
-    }
-
-    val refreshTrigger by navController
-        .currentBackStackEntry
-        ?.savedStateHandle
-        ?.getStateFlow("refresh", false)
-        ?.collectAsState(initial = false) ?: remember { mutableStateOf(false) }
-
-    LaunchedEffect(refreshTrigger) {
-        Log.d("PlantListScreen", "Refresh trigger changed: $refreshTrigger")
-        if (refreshTrigger) {
-            Log.d("PlantListScreen", "Initiating forced refresh")
-            userId?.let { 
-                Log.d("PlantListScreen", "Refreshing plants for user ${it}")
-                plantViewModel.getPlants(it, forceRefresh = true)
-            }
-            navController.currentBackStackEntry?.savedStateHandle?.set("refresh", false)
-            Log.d("PlantListScreen", "Reset refresh trigger")
-        }
     }
 
     Scaffold(
@@ -269,8 +285,7 @@ fun PlantListScreen(
                 .padding(paddingValues)
         ) {
             when {
-                loading && !isUpdating -> {
-                    Log.d("PlantListScreen", "Showing loading state")
+                isRefreshingList || (loading && !isUpdating) -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -278,7 +293,6 @@ fun PlantListScreen(
                         CircularProgressIndicator()
                     }
                 }
-
                 error != null && !isNavigating -> {
                     Log.d("PlantListScreen", "Showing error state: $error")
                     Column(
@@ -455,10 +469,14 @@ private fun PlantCard(
                         shape = CircleShape,
                     ) {
                         AsyncImage(
-                            model = details?.imageUri ?: R.drawable.default_plant,
+                            model = details?.imageUri.also { uri ->
+                                Log.d("PlantListScreen", "Loading image for plant ${plant.plantId}, URI: $uri")
+                            } ?: R.drawable.default_plant,
                             contentDescription = "Plant image",
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
+                            error = painterResource(id = R.drawable.default_plant),
+                            fallback = painterResource(id = R.drawable.default_plant)
                         )
                     }
 
@@ -473,6 +491,13 @@ private fun PlantCard(
                                 text = scientificName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        details?.plantType?.takeIf { it.isNotEmpty() }?.let { plantType ->
+                            Text(
+                                text = plantType,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                         }
                     }

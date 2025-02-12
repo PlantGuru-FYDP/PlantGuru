@@ -64,6 +64,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.UUID
+import android.os.Build
 
 private fun askForLocation(context: Context) {
     val builder = AlertDialog.Builder(context)
@@ -86,12 +87,58 @@ private fun isLocationEnabled(context: Context): Boolean {
 }
 
 private fun checkRequiredPermissions(context: Context): Boolean {
-    return listOf(
-        Manifest.permission.BLUETOOTH_SCAN,
-        Manifest.permission.BLUETOOTH_CONNECT,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    ).all {
+    val basePermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        // Android 12 (S) and above
+        listOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT
+        )
+    } else {
+        // Android 11 and below
+        listOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN
+        )
+    }
+
+    // Location permission is required for BLE scanning on all Android versions
+    val permissions = basePermissions + Manifest.permission.ACCESS_FINE_LOCATION
+
+    return permissions.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+    }
+}
+
+private fun checkAndRequestPermissions(
+    context: Context,
+    requestPermissionsLauncher: ActivityResultLauncher<Array<String>>
+): Boolean {
+    val basePermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        // Android 12 (S) and above
+        listOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT
+        )
+    } else {
+        // Android 11 and below
+        listOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN
+        )
+    }
+
+    // Location permission is required for BLE scanning on all Android versions
+    val permissions = basePermissions + Manifest.permission.ACCESS_FINE_LOCATION
+
+    val permissionsToRequest = permissions.filter {
+        ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+    }
+
+    return if (permissionsToRequest.isNotEmpty()) {
+        requestPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
+        false
+    } else {
+        true
     }
 }
 

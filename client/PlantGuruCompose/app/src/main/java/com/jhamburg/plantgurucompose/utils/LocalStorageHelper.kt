@@ -20,30 +20,13 @@ class LocalStorageHelper(private val context: Context) {
 
     fun savePlantDetails(plantId: Int, details: PlantAdditionalDetails) {
         try {
-            Log.d("LocalStorageHelper", "Saving details for plant $plantId")
-            Log.d("LocalStorageHelper", "Details dir exists: ${plantDetailsDir.exists()}")
-            Log.d("LocalStorageHelper", "Images dir exists: ${plantImagesDir.exists()}")
-
+            Log.d("LocalStorageHelper", "Saving details for plant $plantId: $details")
             val detailsFile = File(plantDetailsDir, "plant_${plantId}_details.json")
             val jsonString = gson.toJson(details)
             detailsFile.writeText(jsonString)
             Log.d("LocalStorageHelper", "Saved JSON details to: ${detailsFile.absolutePath}")
-
-            details.imageUri?.let { uri ->
-                Log.d("LocalStorageHelper", "Processing image URI: $uri")
-                val imageFile = File(plantImagesDir, "plant_${plantId}_image.jpg")
-                Log.d("LocalStorageHelper", "Target image file: ${imageFile.absolutePath}")
-
-                context.contentResolver.openInputStream(Uri.parse(uri))?.use { input ->
-                    FileOutputStream(imageFile).use { output ->
-                        input.copyTo(output)
-                    }
-                }
-                Log.d("LocalStorageHelper", "Successfully saved image")
-            }
         } catch (e: Exception) {
-            Log.e("LocalStorageHelper", "Error saving plant details: ${e.message}")
-            Log.e("LocalStorageHelper", "Stack trace:", e)
+            Log.e("LocalStorageHelper", "Error saving plant details", e)
             throw e
         }
     }
@@ -51,14 +34,17 @@ class LocalStorageHelper(private val context: Context) {
     fun getPlantDetails(plantId: Int): PlantAdditionalDetails? {
         return try {
             val detailsFile = File(plantDetailsDir, "plant_${plantId}_details.json")
+            Log.d("LocalStorageHelper", "Looking for details at: ${detailsFile.absolutePath}")
             if (detailsFile.exists()) {
                 val jsonString = detailsFile.readText()
+                Log.d("LocalStorageHelper", "Found JSON details: $jsonString")
                 gson.fromJson(jsonString, PlantAdditionalDetails::class.java)
             } else {
+                Log.d("LocalStorageHelper", "No details file found for plant $plantId")
                 null
             }
         } catch (e: Exception) {
-            Log.e("LocalStorageHelper", "Error reading plant details: ${e.message}")
+            Log.e("LocalStorageHelper", "Error reading plant details", e)
             null
         }
     }

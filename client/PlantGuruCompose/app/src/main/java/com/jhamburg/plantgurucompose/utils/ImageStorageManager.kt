@@ -9,19 +9,21 @@ import java.io.FileOutputStream
 import java.io.IOException
 
 class ImageStorageManager(private val context: Context) {
-    private val imagesDir = context.filesDir.resolve("images").apply { mkdirs() }
+    private val imagesDir = context.filesDir.resolve("plant_images").apply { mkdirs() }
 
     fun saveImage(sourceUri: Uri, plantId: Int): Uri? {
         val timestamp = System.currentTimeMillis()
-        val destinationFile = File(imagesDir, "plant_${plantId}_${timestamp}.jpg")
+        
+        // Delete any existing images for this plant first
+        deleteImage(plantId)
+        
+        val destinationFile = File(imagesDir, "plant_${plantId}_image.jpg")
 
         return try {
             Log.d(
                 "ImageStorageManager",
                 "Saving image from $sourceUri to ${destinationFile.absolutePath}"
             )
-
-            deleteImage(plantId)
 
             context.contentResolver.openInputStream(sourceUri)?.use { input ->
                 FileOutputStream(destinationFile).use { output ->
@@ -48,11 +50,8 @@ class ImageStorageManager(private val context: Context) {
     }
 
     fun getImageUri(plantId: Int): Uri? {
-        val imageFiles = imagesDir.listFiles { file ->
-            file.name.startsWith("plant_${plantId}_") && file.name.endsWith(".jpg")
-        }?.sortedByDescending { it.name }
-
-        return imageFiles?.firstOrNull()?.let { imageFile ->
+        val imageFile = File(imagesDir, "plant_${plantId}_image.jpg")
+        return if (imageFile.exists()) {
             try {
                 FileProvider.getUriForFile(
                     context,
@@ -65,10 +64,9 @@ class ImageStorageManager(private val context: Context) {
                 Log.e("ImageStorageManager", "Failed to generate URI for file", e)
                 null
             }
-        }.also { uri ->
-            if (uri == null) {
-                Log.d("ImageStorageManager", "No image file exists for plant $plantId")
-            }
+        } else {
+            Log.d("ImageStorageManager", "No image file exists for plant $plantId")
+            null
         }
     }
 

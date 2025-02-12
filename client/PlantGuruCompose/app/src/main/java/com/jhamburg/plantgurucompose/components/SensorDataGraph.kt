@@ -264,7 +264,6 @@ fun SensorDataGraph(
                     }
                 }
                 
-                
                 valueFormatter = object : ValueFormatter() {
                     override fun getFormattedValue(value: Float): String {
                         val range = axisMaximum - axisMinimum
@@ -286,21 +285,25 @@ fun SensorDataGraph(
             val projectedData = sensorData.filter { it.sensorId < 0 }
 
             chart.data = LineData().apply {
-                                addDataSet(createRealDataSet(realData, sensorType))
+                addDataSet(createRealDataSet(realData, sensorType))
 
-                                if (projectedData.isNotEmpty()) {
+                if (projectedData.isNotEmpty()) {
                     val projectedEntries = createProjectedEntries(projectedData, realData, sensorType)
                     addDataSet(createProjectedDataSet(projectedEntries, sensorType))
-                    
-                                        createConfidenceIntervalDataSet(projectedEntries).forEach { addDataSet(it) }
+                    createConfidenceIntervalDataSet(projectedEntries).forEach { addDataSet(it) }
                 }
             }
 
-                        if (showWateringEvents) {
+            // Clear all limit lines first
+            chart.xAxis.removeAllLimitLines()
+
+            // First add midnight markers (they should be in the background)
+            addMidnightMarkers(chart, sensorData, realData, projectedData)
+
+            // Then add watering events if enabled (they should be on top)
+            if (showWateringEvents) {
                 addWateringEventMarkers(chart, wateringEvents, sensorData)
             }
-
-                        addMidnightMarkers(chart, sensorData, realData, projectedData)
 
             chart.invalidate()
         }
@@ -436,14 +439,6 @@ private fun addWateringEventMarkers(
 ) {
     Log.d("SensorDataGraph", "Adding ${wateringEvents.size} watering events")
     
-    val firstSensorTimestamp = if (sensorData.isNotEmpty()) {
-        DateTimeUtil.parseTimestamp(sensorData.first().timeStamp)
-            .atZone(ZoneId.systemDefault())
-            .toInstant()
-            .toEpochMilli()
-        
-    } else 0L
-    
     wateringEvents.forEach { event ->
         val eventDateTime = DateTimeUtil.parseTimestamp(event.timeStamp)
         val eventTimestamp = eventDateTime
@@ -451,14 +446,6 @@ private fun addWateringEventMarkers(
             .toInstant()
             .toEpochMilli()
             .toFloat()
-        
-        Log.d("SensorDataGraph", """
-            Watering event details:
-            Original timestamp: ${event.timeStamp}
-            Parsed datetime: $eventDateTime
-            Converted timestamp: $eventTimestamp
-            First sensor timestamp: $firstSensorTimestamp
-        """.trimIndent())
         
         val limitLine = LimitLine(eventTimestamp).apply {
             lineWidth = 2f
@@ -479,8 +466,8 @@ private fun addMidnightMarkers(
     realData: List<SensorData>,
     projectedData: List<SensorData>
 ) {
-    val midnightLines = mutableListOf<LimitLine>()
-
+    if (sensorData.isEmpty()) return
+    
     val firstDateTime = DateTimeUtil.parseTimestamp(sensorData.first().timeStamp)
     val lastDateTime = DateTimeUtil.parseTimestamp(sensorData.last().timeStamp)
 
@@ -491,30 +478,18 @@ private fun addMidnightMarkers(
         .withSecond(0)
         .withNano(0)
 
-        while (currentDateTime.isBefore(lastDateTime)) {
+    while (currentDateTime.isBefore(lastDateTime)) {
         val timestamp = currentDateTime
             .atZone(ZoneId.systemDefault())
             .toInstant()
             .toEpochMilli()
             .toFloat()
 
-        val closestDataPoint = sensorData.minByOrNull { data ->
-            val dataDateTime = DateTimeUtil.parseTimestamp(data.timeStamp)
-            val dataTimestamp = dataDateTime
-                .atZone(ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli()
-            Math.abs(dataTimestamp - timestamp)
-        }
-
-        if (closestDataPoint != null) {
-            midnightLines.add(createMidnightMarker(timestamp, currentDateTime))
-        }
+        val limitLine = createMidnightMarker(timestamp, currentDateTime)
+        chart.xAxis.addLimitLine(limitLine)
 
         currentDateTime = currentDateTime.plusDays(1)
     }
-
-        midnightLines.forEach { chart.xAxis.addLimitLine(it) }
 }
 
 private fun createMidnightMarker(timestamp: Float, dateTime: LocalDateTime): LimitLine {

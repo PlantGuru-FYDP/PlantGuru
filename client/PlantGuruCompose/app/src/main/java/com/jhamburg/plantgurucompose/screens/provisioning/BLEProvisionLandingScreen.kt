@@ -8,6 +8,7 @@ import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -69,6 +70,7 @@ import com.espressif.provisioning.listeners.BleScanListener
 import com.jhamburg.plantgurucompose.R
 import com.jhamburg.plantgurucompose.constants.AppConstants
 import com.jhamburg.plantgurucompose.viewmodels.ProvisioningViewModel
+import androidx.activity.compose.BackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,6 +87,18 @@ fun BLEProvisionLandingScreen(
     var isConnecting by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
 
+    // Handle back press
+    BackHandler {
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            ESPProvisionManager.getInstance(context).stopBleScan()
+        }
+        navController.popBackStack()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -94,11 +108,10 @@ fun BLEProvisionLandingScreen(
                         if (ActivityCompat.checkSelfPermission(
                                 context,
                                 Manifest.permission.ACCESS_FINE_LOCATION
-                            ) != PackageManager.PERMISSION_GRANTED
+                            ) == PackageManager.PERMISSION_GRANTED
                         ) {
-                            return@IconButton
+                            ESPProvisionManager.getInstance(context).stopBleScan()
                         }
-                        ESPProvisionManager.getInstance(context).stopBleScan()
                         navController.popBackStack()
                     }) {
                         Icon(
@@ -244,6 +257,7 @@ fun BLEProvisionLandingScreen(
                                 connected = true
                                 Log.d("BLEProvision", "Successfully connected to device")
                               
+                                navController.previousBackStackEntry?.savedStateHandle?.set("refresh", true)
                                 navController.navigate("wifi_scan/$plantId/$provisionToken") {
                                     popUpTo("ble_provision_landing/$plantId") { inclusive = true }
                                 }
@@ -362,9 +376,18 @@ fun BLEProvisionLandingScreen(
 
                 Button(
                     onClick = {
-                        if (!bluetoothManager.adapter.isEnabled) {
-                            bluetoothEnableLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
-                        } else if (checkRequiredPermissions(context)) {
+                        if (!checkRequiredPermissions(context)) {
+                            checkAndRequestPermissions(context, permissionLauncher)
+                        } else if (!bluetoothManager.adapter.isEnabled) {
+                            if (ActivityCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.BLUETOOTH_CONNECT
+                            ) == PackageManager.PERMISSION_GRANTED) {
+                                bluetoothEnableLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+                            } else {
+                                checkAndRequestPermissions(context, permissionLauncher)
+                            }
+                        } else {
                             handleStartScan(
                                 context,
                                 provisionManager,
@@ -374,8 +397,6 @@ fun BLEProvisionLandingScreen(
                             ) { newIsScanning ->
                                 isScanning = newIsScanning
                             }
-                        } else {
-                            checkAndRequestPermissions(context, permissionLauncher)
                         }
                     },
                     modifier = Modifier
@@ -492,11 +513,24 @@ private fun handleStartScan(
 
 
 private fun checkRequiredPermissions(context: Context): Boolean {
-    return listOf(
-        Manifest.permission.BLUETOOTH_SCAN,
-        Manifest.permission.BLUETOOTH_CONNECT,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    ).all {
+    val basePermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        // Android 12 (S) and above
+        listOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT
+        )
+    } else {
+        // Android 11 and below
+        listOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN
+        )
+    }
+
+    // Location permission is required for BLE scanning on all Android versions
+    val permissions = basePermissions + Manifest.permission.ACCESS_FINE_LOCATION
+
+    return permissions.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }
 }
@@ -505,11 +539,24 @@ private fun checkAndRequestPermissions(
     context: Context,
     permissionLauncher: ActivityResultLauncher<Array<String>>
 ) {
-    val permissionsToRequest = listOf(
-        Manifest.permission.BLUETOOTH_SCAN,
-        Manifest.permission.BLUETOOTH_CONNECT,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    ).filter {
+    val basePermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        // Android 12 (S) and above
+        listOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT
+        )
+    } else {
+        // Android 11 and below
+        listOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN
+        )
+    }
+
+    // Location permission is required for BLE scanning on all Android versions
+    val permissions = basePermissions + Manifest.permission.ACCESS_FINE_LOCATION
+
+    val permissionsToRequest = permissions.filter {
         ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
     }
 
@@ -612,17 +659,17 @@ private fun SetupInstructionsCard() {
 
             SetupInstruction(
                 number = "1",
-                text = "Ensure your Plant Guru device is plugged in and in range"
+                text = "Plug in your Plant Guru device, and place the soil moisture sensor and soil temperature sensor into your plant's soil"
             )
 
             SetupInstruction(
                 number = "2",
-                text = "Hold both button for 5 seconds"
+                text = "Ensure the device's LED is ON (solid light), if not, hold the button for 5 seconds."
             )
 
             SetupInstruction(
                 number = "3",
-                text = "Ensure the LED is flashing green"
+                text = "Make sure you're within range of your WiFi network"
             )
         }
     }

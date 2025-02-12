@@ -41,6 +41,7 @@ import com.jhamburg.plantgurucompose.viewmodels.ProjectionsViewModel
 private val sensorTabs = listOf(
     SensorType.SOIL_MOISTURE,
     SensorType.SOIL_TEMP,
+    SensorType.EXTERNAL_TEMP,
     SensorType.LIGHT,
     SensorType.HUMIDITY
 )
@@ -84,6 +85,7 @@ fun PlantProjectionsTab(
                                 when (type) {
                                     SensorType.SOIL_MOISTURE -> R.drawable.baseline_water_24
                                     SensorType.SOIL_TEMP -> R.drawable.baseline_device_thermostat_24
+                                    SensorType.EXTERNAL_TEMP -> R.drawable.baseline_air_24
                                     SensorType.LIGHT -> R.drawable.baseline_sunny_24
                                     SensorType.HUMIDITY -> R.drawable.baseline_water_24
                                     else -> R.drawable.baseline_device_thermostat_24

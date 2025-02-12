@@ -112,12 +112,12 @@ private fun SetupInstructionsCard() {
 
             SetupInstruction(
                 number = "1",
-                text = "Plug in your Plant Guru device"
+                text = "Plug in your Plant Guru device, and place the soil moisture sensor and soil temperature sensor into your plant's soil"
             )
 
             SetupInstruction(
                 number = "2",
-                text = "Ensure the device's LED is blinking blue"
+                text = "Ensure the device's LED is ON (solid light), if not, hold the button for 5 seconds."
             )
 
             SetupInstruction(

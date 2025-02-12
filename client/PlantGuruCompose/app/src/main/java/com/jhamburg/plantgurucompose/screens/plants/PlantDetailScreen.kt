@@ -1,6 +1,7 @@
 package com.jhamburg.plantgurucompose.screens.plants
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
@@ -177,7 +178,7 @@ fun PlantDetailScreen(navController: NavController, plantId: Int) {
     val scope = rememberCoroutineScope()
 
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Overview", "Sensors", "History", "Care", "Projections")
+    val tabs = listOf("Overview", "Sensors", "History", "Projections")
 
     val currentPlant = plants.firstOrNull { it.plantId == plantId }
 
@@ -278,21 +279,20 @@ fun PlantDetailScreen(navController: NavController, plantId: Int) {
         wateringEventViewModel.getLastWateringEvent(plantId)
     }
 
-    val refreshTrigger by navController
-        .currentBackStackEntry
-        ?.savedStateHandle
-        ?.getStateFlow("refresh", false)
-        ?.collectAsState(initial = false) ?: remember { mutableStateOf(false) }
+    var isNavigatingBack by remember { mutableStateOf(false) }
 
-    LaunchedEffect(refreshTrigger) {
-        if (refreshTrigger) {
-            user?.let {
-                plantViewModel.getPlants(it.userId, forceRefresh = true)
+    BackHandler {
+        plantViewModel.setNeedsRefresh(true)
+        navController.navigateUp()
+    }
+
+    LaunchedEffect(Unit) {
+        val callback = NavController.OnDestinationChangedListener { _, destination, _ ->
+            if (destination.route != "plantDetail/{plantId}") {
+                plantViewModel.setNeedsRefresh(true)
             }
-            navController.currentBackStackEntry
-                ?.savedStateHandle
-                ?.set("refresh", false)
         }
+        navController.addOnDestinationChangedListener(callback)
     }
 
     Scaffold(
@@ -319,7 +319,10 @@ fun PlantDetailScreen(navController: NavController, plantId: Int) {
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
+                    IconButton(onClick = { 
+                        plantViewModel.setNeedsRefresh(true)
+                        navController.navigateUp() 
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 },
@@ -376,8 +379,7 @@ fun PlantDetailScreen(navController: NavController, plantId: Int) {
                                     0 -> painterResource(R.drawable.baseline_home_24)
                                     1 -> painterResource(R.drawable.baseline_sensors_24)
                                     2 -> painterResource(R.drawable.baseline_history_24)
-                                    3 -> painterResource(R.drawable.baseline_yard_24)
-                                    4 -> painterResource(R.drawable.baseline_query_stats_24)
+                                    3 -> painterResource(R.drawable.baseline_query_stats_24)
                                     else -> painterResource(R.drawable.baseline_home_24)
                                 },
                                 contentDescription = title
@@ -444,19 +446,13 @@ fun PlantDetailScreen(navController: NavController, plantId: Int) {
                             },
                             onSensorTypeSelected = { selectedSensorType = it },
                             sensorDataViewModel = sensorDataViewModel,
-
-                            )
+                        )
 
                         2 -> PlantHistoryTab(
                             plantId = plantId
                         )
 
-                        3 -> PlantCareTab(
-                            plant = plants.firstOrNull { it.plantId == plantId },
-                            details = plantDetails[plantId]
-                        )
-
-                        4 -> PlantProjectionsTab(
+                        3 -> PlantProjectionsTab(
                             plantId = plantId,
                             selectedTimeRange = selectedTimeRange,
                             selectedSensorType = selectedSensorType,

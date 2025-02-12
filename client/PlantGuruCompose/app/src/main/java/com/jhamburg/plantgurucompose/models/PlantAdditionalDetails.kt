@@ -29,6 +29,9 @@ enum class PlantSubType(val category: PlantCategory, val displayName: String) {
     CALATHEA(PlantCategory.FOLIAGE, "Calathea"),
     DRACAENA(PlantCategory.FOLIAGE, "Dracaena"),
     ZZ_PLANT(PlantCategory.FOLIAGE, "ZZ Plant"),
+    COLEUS(PlantCategory.FOLIAGE, "Coleus"),
+    PURPLE_COLEUS(PlantCategory.FOLIAGE, "Purple Coleus"),
+    SPIDER_PLANT(PlantCategory.FOLIAGE, "Spider Plant"),
 
     // Succulents & Cacti
     ALOE_VERA(PlantCategory.SUCCULENT_CACTUS, "Aloe Vera"),
@@ -119,7 +122,7 @@ data class PlantAdditionalDetails(
     val createdOn: Long,
     val description: String? = null,
     val careInstructions: String? = null,
-    val imageUri: String? = null
+    var imageUri: String? = null
 ) {
     // Helper functions to convert between string and enum types
     fun getCategory(): PlantCategory? = PlantCategory.values().find {
