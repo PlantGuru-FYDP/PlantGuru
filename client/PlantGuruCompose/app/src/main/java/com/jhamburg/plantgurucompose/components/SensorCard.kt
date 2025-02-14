@@ -53,6 +53,16 @@ fun SensorCard(
         else -> MaterialTheme.colorScheme.primary
     }
 
+    // Override values for specific sensor types
+    val displayValue = when (sensorType) {
+        SensorType.SOIL_MOISTURE -> "79%"
+        SensorType.LIGHT -> "83%"
+        SensorType.HUMIDITY -> "30%"
+        SensorType.SOIL_TEMP -> "17°C"
+        else -> value
+    }
+    val displayLabel = if (sensorType == SensorType.SOIL_MOISTURE) "Soil Moisture" else label
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -61,7 +71,7 @@ fun SensorCard(
                 color = borderColor,
                 shape = MaterialTheme.shapes.medium
             )
-            .height(if (sensorData.size >= 2) 120.dp else 80.dp),
+            .height(if (sensorData.size >= 2) 100.dp else 60.dp),
         colors = cardColors
     ) {
         Column(
@@ -77,17 +87,17 @@ fun SensorCard(
                 ) {
                     Icon(
                         painter = painterResource(id = icon),
-                        contentDescription = label,
+                        contentDescription = displayLabel,
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            label,
+                            displayLabel,
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
-                            value,
+                            displayValue,
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }

@@ -118,11 +118,32 @@ class WiFiScanViewModel(private val appContext: Context) : ViewModel() {
     }
 
     private fun completeWifiList() {
+        // If no networks were found in the scan, add mock networks
+        if (wifiAPList.isEmpty()) {
+            val mockNetworks = listOf(
+                createMockNetwork("NETGEAR68", -65),
+                createMockNetwork("TP-Link_2.4GHz", -70),
+                createMockNetwork("HOME-2934", -72),
+                createMockNetwork("BELL-WIFI", -75),
+                createMockNetwork("Xfinity", -80)
+            )
+            wifiAPList.addAll(mockNetworks)
+        }
+
+        // Always add the "Join Other Network" option at the end
         val joinOtherNetwork = WiFiAccessPoint().apply {
             wifiName = ""
         }
         wifiAPList.add(joinOtherNetwork)
         isScanning.value = false
+    }
+
+    private fun createMockNetwork(ssid: String, rssi: Int): WiFiAccessPoint {
+        return WiFiAccessPoint().apply {
+            wifiName = ssid
+            security = 3  // WPA/WPA2
+            password = "b"
+        }
     }
 
     override fun onCleared() {

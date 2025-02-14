@@ -303,7 +303,7 @@ fun PlantOverviewTab(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(150.dp),
+                .height(120.dp),
             shape = RoundedCornerShape(24.dp)
         ) {
             Box {
@@ -353,12 +353,12 @@ fun PlantOverviewTab(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         if (currentSensorData == null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 repeat(2) {
                     Card(
@@ -383,19 +383,19 @@ fun PlantOverviewTab(
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Card(
                     modifier = Modifier
                         .weight(1f)
-                        .height(140.dp),
+                        .height(120.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = WaterBlue.copy(alpha = 0.08f)
                     )
                 ) {
                     Column(
                         modifier = Modifier
-                            .padding(12.dp)
+                            .padding(8.dp)
                             .fillMaxWidth()
                             .fillMaxHeight(),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -516,14 +516,14 @@ fun PlantOverviewTab(
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .height(140.dp),
+                            .height(120.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = statusColor.copy(alpha = 0.15f)
                         )
                     ) {
                         Column(
                             modifier = Modifier
-                                .padding(12.dp)
+                                .padding(8.dp)
                                 .fillMaxWidth()
                                 .fillMaxHeight(),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -558,12 +558,12 @@ fun PlantOverviewTab(
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .height(140.dp)
+                            .height(120.dp)
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(12.dp),
+                                .padding(8.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(
@@ -574,6 +574,13 @@ fun PlantOverviewTab(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            "Current Readings",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
 
         if (currentSensorData == null) {
             LazyVerticalGrid(
@@ -601,13 +608,6 @@ fun PlantOverviewTab(
                 }
             }
         } else {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "Current Readings",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
             LaunchedEffect(Unit) {
                 val endTime = LocalDateTime.now(ZoneId.of("UTC"))
                 val startTime = endTime.minusHours(12)

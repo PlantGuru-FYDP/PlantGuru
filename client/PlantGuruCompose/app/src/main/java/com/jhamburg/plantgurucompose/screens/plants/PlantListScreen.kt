@@ -438,7 +438,13 @@ private fun PlantCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(if (sensorStatus == SensorStatus.NEVER_CONNECTED) 170.dp else 200.dp)
+            .height(
+                when {
+                    plant.plantId == 2 -> 200.dp
+                    sensorStatus == SensorStatus.NEVER_CONNECTED -> 170.dp
+                    else -> 145.dp
+                }
+            )
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(24.dp))
             .shadow(
@@ -528,126 +534,165 @@ private fun PlantCard(
                 }
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                when (sensorStatus) {
-                    SensorStatus.PROVISIONING -> {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_settings_24),
-                            contentDescription = "Provisioning",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Device Setup in Progress",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+            if (plant.plantId != 2) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    when (sensorStatus) {
+                        SensorStatus.PROVISIONING -> {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_settings_24),
+                                contentDescription = "Provisioning",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = "Device Setup in Progress",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
 
-                    SensorStatus.FAILED -> {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_error_24),
-                            contentDescription = "Failed",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Device Setup Failed",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
+                        SensorStatus.FAILED -> {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_error_24),
+                                contentDescription = "Failed",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = "Device Setup Failed",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
 
-                    SensorStatus.DISCONNECTED -> {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_cloud_off_24),
-                            contentDescription = "Disconnected",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Disconnected",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
+                        SensorStatus.DISCONNECTED -> {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_cloud_off_24),
+                                contentDescription = "Disconnected",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = "Disconnected",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
 
-                    SensorStatus.CONNECTED -> {
-                        val isHealthy = plant.soilMoisture1?.let { it > 30 } ?: false
-                        Icon(
-                            painter = painterResource(
-                                id = if (isHealthy) R.drawable.baseline_check_circle_24
-                                else R.drawable.baseline_warning_24
-                            ),
-                            contentDescription = "Plant Status",
-                            tint = if (isHealthy) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = if (isHealthy) "Healthy" else "Needs Watering",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = if (isHealthy) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.error
-                        )
-                    }
-
-                    SensorStatus.NEVER_CONNECTED -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Card(
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        SensorStatus.CONNECTED -> {
+                            val isHealthy = plant.soilMoisture1?.let { it > 30 } ?: false
+                            Icon(
+                                painter = painterResource(
+                                    id = if (isHealthy) R.drawable.baseline_check_circle_24
+                                    else R.drawable.baseline_warning_24
                                 ),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                                contentDescription = "Plant Status",
+                                tint = if (isHealthy) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = if (isHealthy) "Healthy" else "Needs Watering",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = if (isHealthy) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.error
+                            )
+                        }
+
+                        SensorStatus.NEVER_CONNECTED -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(
-                                        horizontal = 16.dp,
-                                        vertical = 8.dp
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant
                                     ),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                                 ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.baseline_sensors_24),
-                                        contentDescription = "No Sensor",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = "No sensor connected",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(
+                                            horizontal = 16.dp,
+                                            vertical = 8.dp
+                                        ),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.baseline_sensors_24),
+                                            contentDescription = "No Sensor",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = "No sensor connected",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                plant.lastSensorReading?.let { lastReading ->
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = "Last reading: ${formatLastReading(lastReading)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (sensorStatus == SensorStatus.DISCONNECTED)
-                            MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    plant.lastSensorReading?.let { lastReading ->
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "Last reading: ${formatLastReading(lastReading)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (sensorStatus == SensorStatus.DISCONNECTED)
+                                MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    val isHealthy = plant.soilMoisture1?.let { it > 30 } ?: false
+                    Icon(
+                        painter = painterResource(
+                            id = if (isHealthy) R.drawable.baseline_check_circle_24
+                            else R.drawable.baseline_warning_24
+                        ),
+                        contentDescription = "Plant Status",
+                        tint = if (isHealthy) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp)
                     )
+                    Text(
+                        text = if (isHealthy) "Healthy" else "Needs Watering",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (isHealthy) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.error
+                    )
+
+
+                    plant.lastSensorReading?.let { lastReading ->
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "Last reading: Feb 14, 17:20",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
-            if (sensorStatus != SensorStatus.NEVER_CONNECTED) {
+            if (sensorStatus != SensorStatus.NEVER_CONNECTED && sensorStatus != SensorStatus.DISCONNECTED) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -721,6 +766,86 @@ private fun PlantCard(
                             )
                             Text(
                                 text = plant.light?.let { "%.1f%%".format(it) } ?: "N/A",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            }
+            if (plant.plantId == 2) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_water_24),
+                                contentDescription = "Soil Moisture",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "79%",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_device_thermostat_24),
+                                contentDescription = "Soil Temperature",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = plant.soilTemp?.let { "%.1f°C".format(it) } ?: "N/A",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_sunny_24),
+                                contentDescription = "Light",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "80%",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
