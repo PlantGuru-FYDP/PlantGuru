@@ -810,13 +810,46 @@ const slides = [
   {
     title: 'PlantGuru Smart Device',
     content: (
-      <Box sx={{ textAlign: 'center' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4 }}>
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5 }}
-          >
+      <Box sx={{ textAlign: 'center', position: 'relative' }}>
+        {/* <motion.img
+          src="/PlantGuru/presentation_images/plants/ai-generated-lush-green-plant-in-rustic-rope-hanging-basket-free-png.webp"
+          initial={{ rotate: -2 }}
+          animate={{ rotate: 2 }}
+          transition={{ 
+            duration: 3,
+            repeat: Infinity,
+            repeatType: "reverse",
+            ease: "easeInOut"
+          }}
+          style={{
+            position: 'fixed',
+            left: '0%',
+            top: 0,
+            transform: 'translateX(-50%)',
+            width: '400px',
+            height: 'auto',
+            objectFit: 'contain',
+            zIndex: 0,
+            opacity: 0.2
+          }}
+        /> */}
+        <motion.img
+          src="/PlantGuru/presentation_images/plants/green-plants-png-transparent-2.png"
+          initial={{ opacity: 0, scale: 0.8, translateX: 200, translateY: 200 }}
+          animate={{ opacity: 0.15, scale: 1, translateX: 100, translateY: 100 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          style={{
+            position: 'fixed',
+            right: -200,
+            bottom: -400,
+            width: '1300px',
+            height: '1300px',
+            objectFit: 'contain',
+            zIndex: 0
+          }}
+        />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4, position: 'relative', zIndex: 1 }}>
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.5 }}>
             <Logo sx={{ width: 200, height: 200, color: 'primary.dark' }} />
           </motion.div>
           <motion.div
