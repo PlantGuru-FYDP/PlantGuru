@@ -613,38 +613,74 @@ const LiveDataDemo = () => {
 };
 
 const MobileScreenshotCarousel = ({ handleImageClick }) => {
-  const [currentImage, setCurrentImage] = useState(0);
-
+  const [currentIndex, setCurrentIndex] = useState(0);
   const mobileScreenshots = [
     {
-      src: "/PlantGuru/presentation_images/screenshots/app_data.png",
-      alt: "Data View",
-      title: "Data Dashboard"
-    },
-    {
-      src: "/PlantGuru/presentation_images/screenshots/app_all_plants.png",
-      alt: "All Plants View",
-      title: "Plant Management"
-    },
-    {
-      src: "/PlantGuru/presentation_images/screenshots/app_plant.png",
+      src: "/PlantGuru/presentation_images/screenshots/plant view-portrait.png",
       alt: "Plant Details View",
       title: "Plant Details"
+    },
+    {
+      src: "/PlantGuru/presentation_images/screenshots/all plants-portrait.png",
+      alt: "All Plants View",
+      title: "Plant Management"
+    },   
+    {
+      src: "/PlantGuru/presentation_images/screenshots/sensor history-portrait.png",
+      alt: "Sensor History",
+      title: "Sensor History"
+    },
+    {
+      src: "/PlantGuru/presentation_images/screenshots/projection-portrait.png",
+      alt: "Projections View",
+      title: "Plant Projections"
+    },
+    {
+      src: "/PlantGuru/presentation_images/screenshots/provision step 1 bluetooth-portrait.png",
+      alt: "Device Setup - Bluetooth",
+      title: "Device Setup - Step 1"
+    },
+    {
+      src: "/PlantGuru/presentation_images/screenshots/provision step 2 wifi select-portrait.png",
+      alt: "Device Setup - WiFi Selection",
+      title: "Device Setup - Step 2"
+    },
+    {
+      src: "/PlantGuru/presentation_images/screenshots/provision step 3 wifi password-portrait.png",
+      alt: "Device Setup - WiFi Password",
+      title: "Device Setup - Step 3"
+    },
+    {
+      src: "/PlantGuru/presentation_images/screenshots/provision step 4 connecting-portrait.png",
+      alt: "Device Setup - Connecting",
+      title: "Device Setup - Step 4"
     }
   ];
 
   const handlePrevImage = () => {
-    setCurrentImage((prev) => (prev === 0 ? mobileScreenshots.length - 1 : prev - 1));
+    setCurrentIndex((prev) => (prev === 0 ? mobileScreenshots.length - 1 : prev - 1));
   };
 
   const handleNextImage = () => {
-    setCurrentImage((prev) => (prev === mobileScreenshots.length - 1 ? 0 : prev + 1));
+    setCurrentIndex((prev) => (prev === mobileScreenshots.length - 1 ? 0 : prev + 1));
+  };
+
+  const getVisibleScreenshots = () => {
+    const screenshots = [];
+    for (let i = 0; i < 3; i++) {
+      let index = (currentIndex + i) % mobileScreenshots.length;
+      screenshots.push({
+        ...mobileScreenshots[index],
+        key: index
+      });
+    }
+    return screenshots;
   };
 
   return (
     <Box sx={{ 
       mb: 4,
-      height: '60vh',
+      height: '65vh',
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
@@ -658,12 +694,13 @@ const MobileScreenshotCarousel = ({ handleImageClick }) => {
         overflow: 'hidden',
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        px: 12
       }}>
         <IconButton 
           sx={{ 
             position: 'absolute', 
-            left: 16,
+            left: 24,
             top: '50%', 
             transform: 'translateY(-50%)',
             backgroundColor: 'rgba(255, 255, 255, 0.8)',
@@ -682,48 +719,54 @@ const MobileScreenshotCarousel = ({ handleImageClick }) => {
           height: '100%',
           width: '100%',
           display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center'
+          justifyContent: 'center'
         }}>
-          <AnimatePresence initial={false}>
-            <motion.div
-              key={currentImage}
-              style={{
+          {getVisibleScreenshots().map((screenshot, index) => (
+            <Box
+              key={screenshot.key}
+              sx={{
                 position: 'absolute',
+                width: '30%',
                 height: '100%',
+                left: `${index * 35}%`,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
+              }}
+            >
+              <Typography variant="subtitle1" align="center" sx={{ mt: 1 }}>
+                {screenshot.title}
+              </Typography>
+              <Box sx={{
+                height: '90%',
+                width: '100%',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center'
-              }}
-              initial={{ x: 300, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -300, opacity: 0 }}
-              transition={{
-                x: { type: "spring", stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 }
-              }}
-            >
-              <ClickableImage
-                src={mobileScreenshots[currentImage].src}
-                alt={mobileScreenshots[currentImage].alt}
-                onClick={() => handleImageClick(mobileScreenshots[currentImage].src)}
-                style={{ 
-                  height: '100%',
-                  width: 'auto',
-                  maxWidth: '100%',
-                  objectFit: 'contain',
-                  borderRadius: 8,
-                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                }}
-              />
-            </motion.div>
-          </AnimatePresence>
+              }}>
+                <ClickableImage
+                  src={screenshot.src}
+                  alt={screenshot.alt}
+                  onClick={() => handleImageClick(screenshot.src)}
+                  style={{ 
+                    height: '100%',
+                    width: 'auto',
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  }}
+                />
+              </Box>
+ 
+            </Box>
+          ))}
         </Box>
 
         <IconButton 
           sx={{ 
             position: 'absolute', 
-            right: 16,
+            right: 24,
             top: '50%', 
             transform: 'translateY(-50%)',
             backgroundColor: 'rgba(255, 255, 255, 0.8)',
@@ -738,10 +781,6 @@ const MobileScreenshotCarousel = ({ handleImageClick }) => {
         </IconButton>
       </Box>
 
-      <Typography variant="h6" align="center" sx={{ mt: 2 }}>
-        {mobileScreenshots[currentImage].title}
-      </Typography>
-
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'center', 
@@ -751,12 +790,12 @@ const MobileScreenshotCarousel = ({ handleImageClick }) => {
         {mobileScreenshots.map((_, index) => (
           <Box
             key={index}
-            onClick={() => setCurrentImage(index)}
+            onClick={() => setCurrentIndex(index)}
             sx={{
               width: 8,
               height: 8,
               borderRadius: '50%',
-              backgroundColor: currentImage === index ? 'primary.main' : 'grey.300',
+              backgroundColor: index === currentIndex ? 'primary.main' : 'grey.300',
               cursor: 'pointer',
               transition: 'background-color 0.3s'
             }}
@@ -1066,9 +1105,9 @@ const slides = [
                   justifyContent: 'center'
                 }}>
                   <ClickableImage 
-                    src="/PlantGuru/presentation_images/screenshots/app_data.png"
+                    src="/PlantGuru/presentation_images/screenshots/plant view-right.png"
                     alt="Mobile App Screenshots"
-                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/screenshots/app_data.png")}
+                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/screenshots/plant view-right.png")}
                     style={{ 
                       height: '100%',
                       width: 'auto',
@@ -1210,7 +1249,7 @@ const slides = [
             Software Architecture
           </Typography>
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={8}>
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -1219,7 +1258,7 @@ const slides = [
             <MobileScreenshotCarousel handleImageClick={props.handleImageClick} />
           </motion.div>
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={4}>
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -1331,9 +1370,9 @@ const slides = [
                 overflow: 'hidden'
               }}>
                 <ClickableImage 
-                  src="/PlantGuru/presentation_images/screenshots/app_data.png" 
-                  alt="App Data View"
-                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/screenshots/app_data.png")}
+                  src="/PlantGuru/presentation_images/screenshots/sensor history-portrait.png" 
+                  alt="Sensor History View"
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/screenshots/sensor history-portrait.png")}
                   style={{ 
                     height: '100%',
                     width: 'auto',
@@ -1372,9 +1411,9 @@ const slides = [
                 overflow: 'hidden'
               }}>
                 <ClickableImage 
-                  src="/PlantGuru/presentation_images/screenshots/app_all_plants.png"
-                  alt="All Plants View" 
-                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/screenshots/app_all_plants.png")}
+                  src="/PlantGuru/presentation_images/screenshots/plant view-portrait.png"
+                  alt="Plant Details View" 
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/screenshots/plant view-portrait.png")}
                   style={{ 
                     height: '100%',
                     width: 'auto',
