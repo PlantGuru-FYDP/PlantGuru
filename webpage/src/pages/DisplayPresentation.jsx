@@ -1049,9 +1049,9 @@ const slides = [
                   overflow: 'hidden'
                 }}>
                   <ClickableImage 
-                    src="/PlantGuru/presentation_images/enclosure.png"
+                    src="/PlantGuru/presentation_images/enclosure/top_angle.png"
                     alt="Embedded System"
-                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/enclosure.png")}
+                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/enclosure/top_angle.png")}
                     style={{ 
                       width: '100%',
                       height: '100%',
@@ -1236,9 +1236,9 @@ const slides = [
                 overflow: 'hidden'
               }}>
                 <ClickableImage 
-                  src="/PlantGuru/presentation_images/enclosure.png"
+                  src="/PlantGuru/presentation_images/pcb/top_down.png"
                   alt="Hardware Photo"
-                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/enclosure.png")}
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/pcb/top_down.png")}
                   style={{ 
                     width: '100%',
                     height: '100%',
@@ -1497,9 +1497,9 @@ const slides = [
                 overflow: 'hidden'
               }}>
                 <ClickableImage 
-                  src="/PlantGuru/presentation_images/enclosure.png"
+                  src="/PlantGuru/presentation_images/enclosure/top_angle.png"
                   alt="Hardware Prototype"
-                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/enclosure.png")}
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/enclosure/top_angle.png")}
                   style={{ 
                     width: '100%',
                     height: '100%',
@@ -1537,9 +1537,9 @@ const slides = [
                 overflow: 'hidden'
               }}>
                 <ClickableImage 
-                  src="/PlantGuru/presentation_images/pcb.png"
+                  src="/PlantGuru/presentation_images/pcb/top_angle.png"
                   alt="PCB Design"
-                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/pcb.png")}
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/pcb/top_angle.png")}
                   style={{ 
                     width: '100%',
                     height: '100%',
