@@ -11,6 +11,8 @@ module.exports = {
       RDS_PASSWORD: process.env.RDS_PASSWORD,
       RDS_PORT: process.env.RDS_PORT,
       JWT_SECRET: process.env.JWT_SECRET,
+      EMAIL_USER: process.env.EMAIL_USER,
+      EMAIL_APP_PASSWORD: process.env.EMAIL_APP_PASSWORD
     }
   }]
 }; 
