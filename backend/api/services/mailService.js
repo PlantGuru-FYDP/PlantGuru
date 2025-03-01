@@ -11,17 +11,18 @@ class EmailService {
         });
     }
 
-    async sendMoistureAlert(userEmail, plantName) {
+    async sendMoistureAlert(threshold, soil_moisture, userEmail, plantName) {
         try {
             console.log(`[EmailService] Sending moisture alert email to ${userEmail} for ${plantName}`);
             
             const mailOptions = {
-                from: `"Plant Guru" <${process.env.EMAIL_USER}>`,
+                from: `No reply @ Plant Guru <${process.env.EMAIL_USER}>`,
                 to: userEmail,
                 subject: `Moisture Alert: ${plantName} Needs Water`,
                 html: 
                     `
-                    <p>The soil moisture has fallen below the dry threshold. Please water your plant soon.</p>
+                    <p>The soil moisture has fallen below the dry threshold of ${threshold}. Please water your plant soon.</p>
+                    <p>Current soil moisture: ${soil_moisture}</p>
                     `
             };
 

@@ -24,6 +24,7 @@ class User {
     const cmd = "Select * from Users where email = ?";
     return connection.query(cmd, [this.email]);
   }
+ 
   getId() {
     const cmd = "Select user_id from Users where email = ?";
     return connection.query(cmd, [this.email]);
@@ -37,6 +38,13 @@ class User {
       this.phone_number,
       this.userId
     ]);
+  }
+  static async getUserEmail(userId) {
+    const cmd = "Select email from Users where user_id = ?";
+    // return the email
+    const [rows] = await connection.query(cmd, [userId]);
+    return rows[0].email;
+
   }
 }
 
