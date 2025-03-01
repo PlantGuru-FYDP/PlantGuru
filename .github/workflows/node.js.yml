@@ -20,7 +20,7 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     steps:
     - name: Stop existing server
-    - run: pm2 stop all || true
+      run: pm2 stop all || true
 
     - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.node-version }}
