@@ -1,1 +1,1 @@
-Plant guru
+PlantGuru
