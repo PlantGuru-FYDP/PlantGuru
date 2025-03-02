@@ -35,7 +35,7 @@ class PlantHealthCheckService {
                 return;
             }
             
-            const lastSensorData = await SensorData.getLastNSensorReadings(plant_id, 1);
+            const [lastSensorData] = await SensorData.getLastNSensorReadings(plant_id, 1);
             if (!lastSensorData?.length) {
                 return;
             }
