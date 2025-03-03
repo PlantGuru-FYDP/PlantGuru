@@ -13,7 +13,10 @@ Plant Health Check Notification Logic:
 const NotificationService = require('./notificationService');
 const NotificationSettings = require('../models/notificationSettingsModel');
 const Plant = require('../models/plantModel');
+const SensorData = require('../models/sensorModel');
 const DeviceToken = require('../models/deviceTokenModel');
+const User = require('../models/userModel');
+const EmailService = require('./mailService');
 const { getSensorHealth, getHealthDiagnostics } = require('../controllers/insightsController');
 
 class PlantHealthCheckService {
@@ -25,10 +28,24 @@ class PlantHealthCheckService {
             }
 
             const [plant] = await Plant.readDataById(plant_id);
+            const emailId = await User.getUserEmail(plant[0].user_id);
+            const plantName = plant[0].plant_name;
+            
             if (!plant?.length) {
                 return;
             }
+            
+            const [lastSensorData] = await SensorData.getLastNSensorReadings(plant_id, 1);
+            if (!lastSensorData?.length) {
+                return;
+            }
 
+            const soil_moisture = lastSensorData[0].soil_moisture_1;
+            const threshold = settings[0].soil_moisture_min;
+            if (soil_moisture < threshold) {
+                await EmailService.sendMoistureAlert(threshold, soil_moisture, emailId, plantName);
+            }
+            
             const tokens = await DeviceToken.getTokensByUserId(plant[0].user_id);
             if (!tokens?.length) {
                 return;

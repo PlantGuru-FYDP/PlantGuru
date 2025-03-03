@@ -1,12 +1,21 @@
 const NotificationService = require('./notificationService');
+const EmailService = require('./mailService');
 const DeviceToken = require('../models/deviceTokenModel');
 const SensorData = require('../models/sensorModel');
 const Plant = require('../models/plantModel');
-
+const User = require('../models/userModel');
 class PlantMonitoringService {
     async checkPlantConditions(plantId, sensorData) {
         const alerts = [];
-        
+
+        const [user] = await connection.query(`
+            SELECT u.email 
+            FROM Users u 
+            JOIN Plants p ON u.user_id = p.user_id 
+            WHERE p.plant_id = ?
+        `, [plantId]);
+        const userEmail = user?.[0]?.email;
+
         const avgMoisture = (sensorData.soil_moisture_1 + sensorData.soil_moisture_2) / 2;
         if (avgMoisture < 30) {
             alerts.push({
@@ -14,6 +23,7 @@ class PlantMonitoringService {
                 priority: 'HIGH',
                 message: 'Critical: Soil moisture is very low'
             });
+            await EmailService.sendMoistureAlert(userEmail, plantId);
         } else if (avgMoisture < 45) {
             alerts.push({
                 type: 'MOISTURE_WARNING',
@@ -38,7 +48,6 @@ class PlantMonitoringService {
                 message: 'Warning: Light levels are low during daylight hours'
             });
         }
-
         return alerts;
     }
 

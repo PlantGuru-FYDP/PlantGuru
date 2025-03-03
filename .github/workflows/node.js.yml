@@ -21,7 +21,7 @@ jobs:
     steps:
     - name: Stop existing server
       run: pm2 stop all || true
-      
+
     - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
@@ -44,5 +44,7 @@ jobs:
         FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
         FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+        EMAIL_USER: ${{ secrets.EMAIL_USER }}
+        EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
       run: pm2 start ecosystem.config.js
 
