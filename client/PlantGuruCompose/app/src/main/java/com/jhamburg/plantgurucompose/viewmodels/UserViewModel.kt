@@ -1,5 +1,6 @@
 package com.jhamburg.plantgurucompose.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jhamburg.plantgurucompose.auth.AuthManager
@@ -37,18 +38,22 @@ class UserViewModel @Inject constructor(
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message
 
+    private val _loading = MutableStateFlow(false)
+    val loading: StateFlow<Boolean> = _loading
+
     private val _navigationEvent = MutableSharedFlow<String>()
     val navigationEvent = _navigationEvent.asSharedFlow()
 
     init {
-        authManager.getCurrentUser()?.let { user ->
-            _loginState.value = LoginState.Success(user)
-            _user.value = user
-        }
+        _loginState.value = LoginState.Initial
+        val initialUser = authManager.getCurrentUser()
+        Log.d("UserViewModel", "Init - Loading initial user from AuthManager: ${initialUser?.name}")
+        _user.value = initialUser
     }
 
     fun signUp(user: User) {
         viewModelScope.launch {
+            _loading.value = true
             _loginState.value = LoginState.Loading
             try {
                 val response = userRepository.signUp(user)
@@ -69,23 +74,28 @@ class UserViewModel @Inject constructor(
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error(e.message ?: "Unknown error")
                 _message.value = e.message
+            } finally {
+                _loading.value = false
             }
         }
     }
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
+            _loading.value = true
             _loginState.value = LoginState.Loading
             try {
                 val response = userRepository.login(email, password)
                 if (response.userId != null && response.token != null) {
+                    Log.d("UserViewModel", "Login response received - User data: ${response.user}")
+                    // Create user with all data from response
                     val user = User(
                         userId = response.userId,
-                        name = "",
-                        email = email,
+                        name = response.user?.name ?: "",
+                        email = response.user?.email ?: email,
                         password = "",
-                        address = null,
-                        phoneNumber = null
+                        address = response.user?.address,
+                        phoneNumber = response.user?.phoneNumber
                     )
                     handleLoginSuccess(user, response.token)
                 } else {
@@ -95,18 +105,23 @@ class UserViewModel @Inject constructor(
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error(e.message ?: "Unknown error")
                 _message.value = e.message
+            } finally {
+                _loading.value = false
             }
         }
     }
 
     private fun handleLoginSuccess(user: User, token: String) {
         viewModelScope.launch {
+            Log.d("UserViewModel", "handleLoginSuccess - Saving user: ${user.name}")
             authManager.saveAuthToken(token)
             authManager.saveUser(user)
             fcmTokenManager.getToken()?.let { fcmToken ->
                 fcmTokenManager.registerTokenWithBackend(fcmToken)
             }
             _loginState.value = LoginState.Success(user)
+            _user.value = user
+            Log.d("UserViewModel", "Login success complete - User saved and state updated")
         }
     }
 
@@ -123,24 +138,40 @@ class UserViewModel @Inject constructor(
 
     fun updateProfile(user: User) {
         viewModelScope.launch {
+            Log.d("UserViewModel", "updateProfile started - Updating user: ${user.name}")
+            _loading.value = true
             try {
                 val response = userRepository.updateUser(user)
                 if (response.userId != null) {
+                    Log.d("UserViewModel", "Update successful - Saving updated user")
                     authManager.saveUser(user)
                     _loginState.value = LoginState.Success(user)
                     _user.value = user
                     _message.value = "Profile updated successfully"
                 } else {
+                    Log.d("UserViewModel", "Update failed - ${response.message}")
                     _message.value = response.message
                 }
             } catch (e: Exception) {
+                Log.e("UserViewModel", "Update error", e)
                 _message.value = e.message
                 _loginState.value = LoginState.Error(e.message ?: "Unknown error")
+            } finally {
+                _loading.value = false
             }
         }
     }
 
     fun clearMessage() {
         _message.value = null
+    }
+
+    fun loadUserData() {
+        val currentUser = authManager.getCurrentUser()
+        Log.d("UserViewModel", "loadUserData called - Current user from AuthManager: ${currentUser?.name}")
+        currentUser?.let {
+            Log.d("UserViewModel", "Setting user in ViewModel - Name: ${it.name}, Email: ${it.email}")
+            _user.value = it
+        } ?: Log.d("UserViewModel", "No user found in AuthManager")
     }
 }

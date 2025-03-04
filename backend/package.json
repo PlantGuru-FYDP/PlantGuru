@@ -19,10 +19,12 @@
     "express-validator": "^7.1.0",
     "firebase-admin": "^13.0.1",
     "jsonwebtoken": "^9.0.2",
+    "ml-matrix": "^6.12.0",
+    "ml-savitzky-golay": "^5.0.0",
     "mysql2": "^3.10.1",
     "nodemailer": "^6.9.14",
-    "rimraf": "^4.0.0",
-    "npmlog": "^6.0.0"
+    "npmlog": "^6.0.0",
+    "rimraf": "^4.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.2"

@@ -1,36 +1,32 @@
-let SensorData = require("../models/sensorModel");
+const ModelingService = require('../services/modelingService');
 
 exports.model = async (req, res) => {
   try {
     const plant_id = req.query.plant_id;
+    if (!plant_id) {
+      return res.status(400).send({ message: "plant_id is required" });
+    }
 
-    const [rows] = await SensorData.readLatestData(plant_id);
-    const current_temp = rows[0].ext_temp;
-    const current_light = rows[0].light;
-    const current_humidity = rows[0].humidity;
-    const current_soil_moisture_1 = rows[0].soil_moisture_1;
-    const current_soil_moisture_2 = rows[0].soil_moisture_2;
+    // Get the next predicted dry time
+    const predictedDryTime = await ModelingService.getNextDryTime(plant_id);
+    if (!predictedDryTime) {
+      return res.status(404).send({ message: "No predictions available for this plant" });
+    }
 
-    const input_arr = [
-      current_temp,
-      current_humidity,
-      current_light,
-      current_soil_moisture_1,
-      current_soil_moisture_2,
-    ];
-    console.log(input_arr);
-    const predicted_moisture = soil_moisture_predict([input_arr]);
+    // Calculate hours until watering
+    const hoursUntilWatering = Math.max(0, (new Date(predictedDryTime) - new Date()) / (1000 * 60 * 60));
 
-    const hours_until_watering = predict_next_watering_time(
-      predicted_moisture,
-      current_temp,
-      current_light,
-      current_humidity
-    );
+    // Get hourly predictions for more detailed data
+    const hourlyPredictions = await ModelingService.getHourlyPredictions(plant_id);
 
-    return res.status(200).send({ "Next watering time": hours_until_watering });
+    return res.status(200).send({ 
+      next_watering_in_hours: Math.round(hoursUntilWatering * 10) / 10,
+      predicted_dry_time: predictedDryTime,
+      hourly_predictions: hourlyPredictions
+    });
   } catch (err) {
-    return res.status(500).send({ message: "Internal server error" + err });
+    console.error('Error in model endpoint:', err);
+    return res.status(500).send({ message: "Internal server error: " + err.message });
   }
 };
 

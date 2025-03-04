@@ -1,5 +1,6 @@
 const SensorData = require("../models/sensorModel");
 const PlantMonitoringService = require('../services/plantMonitoringService');
+const WateringDetectionService = require('../services/wateringDetectionService');
 
 exports.sensorUpload = async (req, res) => {
   console.log(`Processing sensor upload: ${req.body.length ? 'batch' : 'single'} request`);
@@ -9,11 +10,13 @@ exports.sensorUpload = async (req, res) => {
       for (const data of req.body) {
         const sensorData = new SensorData(data);
         await sensorData.uploadData();
+        await WateringDetectionService.detectWateringEvent(data.plant_id, data);
         //await PlantMonitoringService.processNewSensorData(data.plant_id, data);
       }
     } else {
       const sensorData = new SensorData(req.body);
       await sensorData.uploadData();
+      await WateringDetectionService.detectWateringEvent(req.body.plant_id, req.body);
       //await PlantMonitoringService.processNewSensorData(req.body.plant_id, req.body);
     }
 

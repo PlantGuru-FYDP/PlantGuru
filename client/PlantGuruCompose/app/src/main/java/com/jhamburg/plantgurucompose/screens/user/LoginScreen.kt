@@ -27,7 +27,7 @@ import android.util.Log
 @Composable
 fun LoginScreen(navController: NavController) {
     val userViewModel: UserViewModel = hiltViewModel()
-    var email by remember { mutableStateOf("placeholder@email.com") }
+    var email by remember { mutableStateOf("jhamburg@uwaterloo.ca") }
     var password by remember { mutableStateOf("password") }
     val loginState by userViewModel.loginState.collectAsState()
     val isLoading = loginState is LoginState.Loading

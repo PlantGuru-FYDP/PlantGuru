@@ -178,7 +178,7 @@ fun PlantDetailScreen(navController: NavController, plantId: Int) {
     val scope = rememberCoroutineScope()
 
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Overview", "Sensors", "History", "Projections")
+    val tabs = listOf("Overview", "Sensors", "Projections")
 
     val currentPlant = plants.firstOrNull { it.plantId == plantId }
 
@@ -378,8 +378,7 @@ fun PlantDetailScreen(navController: NavController, plantId: Int) {
                                 painter = when (index) {
                                     0 -> painterResource(R.drawable.baseline_home_24)
                                     1 -> painterResource(R.drawable.baseline_sensors_24)
-                                    2 -> painterResource(R.drawable.baseline_history_24)
-                                    3 -> painterResource(R.drawable.baseline_query_stats_24)
+                                    2 -> painterResource(R.drawable.baseline_query_stats_24)
                                     else -> painterResource(R.drawable.baseline_home_24)
                                 },
                                 contentDescription = title
@@ -448,11 +447,7 @@ fun PlantDetailScreen(navController: NavController, plantId: Int) {
                             sensorDataViewModel = sensorDataViewModel,
                         )
 
-                        2 -> PlantHistoryTab(
-                            plantId = plantId
-                        )
-
-                        3 -> PlantProjectionsTab(
+                        2 -> PlantProjectionsTab(
                             plantId = plantId,
                             selectedTimeRange = selectedTimeRange,
                             selectedSensorType = selectedSensorType,

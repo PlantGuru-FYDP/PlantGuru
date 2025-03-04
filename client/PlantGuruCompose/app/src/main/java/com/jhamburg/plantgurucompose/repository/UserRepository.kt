@@ -21,7 +21,7 @@ class UserRepository @Inject constructor(
             response
         } catch (e: Exception) {
             Log.e("UserRepository", "Sign up error: ${e.message}")
-            UserResponse("Error: ${e.message}", null, null)
+            UserResponse("Error: ${e.message}", null, null, null)
         }
     }
 
@@ -32,7 +32,7 @@ class UserRepository @Inject constructor(
             response
         } catch (e: Exception) {
             Log.e("UserRepository", "Login error: ${e.message}")
-            UserResponse("Error: ${e.message}", null, null)
+            UserResponse("Error: ${e.message}", null, null, null)
         }
     }
 
@@ -44,7 +44,7 @@ class UserRepository @Inject constructor(
             }
             apiService.updateUser(user, "Bearer $token")
         } catch (e: Exception) {
-            UserResponse("Error: ${e.message}", null, null)
+            UserResponse("Error: ${e.message}", null, null, null)
         }
     }
 } 

@@ -260,6 +260,16 @@ fun PlantListScreen(
                             contentDescription = "Refresh"
                         )
                     }
+                    IconButton(onClick = { 
+                        userId?.let { uid ->
+                            navController.navigate("editProfile/$uid") 
+                        }
+                    }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_manage_accounts_24),
+                            contentDescription = "Account"
+                        )
+                    }
                     IconButton(onClick = { navController.navigate("settings") }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -440,7 +450,6 @@ private fun PlantCard(
             .fillMaxWidth()
             .height(
                 when {
-                    plant.plantId == 2 -> 200.dp
                     sensorStatus == SensorStatus.NEVER_CONNECTED -> 170.dp
                     else -> 145.dp
                 }
@@ -766,86 +775,6 @@ private fun PlantCard(
                             )
                             Text(
                                 text = plant.light?.let { "%.1f%%".format(it) } ?: "N/A",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                }
-            }
-            if (plant.plantId == 2) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_water_24),
-                                contentDescription = "Soil Moisture",
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = "79%",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_device_thermostat_24),
-                                contentDescription = "Soil Temperature",
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = plant.soilTemp?.let { "%.1f°C".format(it) } ?: "N/A",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_sunny_24),
-                                contentDescription = "Light",
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = "80%",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }

@@ -14,5 +14,6 @@ data class User(
 data class UserResponse(
     val message: String,
     @SerializedName("user_id") val userId: Int?,
-    val token: String?
+    val token: String?,
+    val user: User?
 )

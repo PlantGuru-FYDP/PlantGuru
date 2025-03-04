@@ -17,23 +17,23 @@ const OPTIMAL_RANGES = {
   ext_temp: {
     name: 'Ext Temp',
     criticalMin: 0,
-    min: 15,
+    min: 10,
     max: 30,
     criticalMax: 40,
     unit: '°C'
   },
   light: {
     name: 'Light',
-    criticalMin: 20,
-    min: 50,
+    criticalMin: 0,
+    min: 0,
     max: 100,
     criticalMax: 100,
     unit: '%'
   },
   humidity: {
     name: 'Humidity',
-    criticalMin: 20,
-    min: 40,
+    criticalMin: 0,
+    min: 0,
     max: 70,
     criticalMax: 90,
     unit: '%'
@@ -41,8 +41,8 @@ const OPTIMAL_RANGES = {
   soil_temp: {
     name: 'Soil Temp',
     criticalMin: 5,
-    min: 15,
-    max: 25,
+    min: 10,
+    max: 30,
     criticalMax: 35,
     unit: '°C'
   },
@@ -50,8 +50,8 @@ const OPTIMAL_RANGES = {
     name: 'Soil Moisture 1',
     criticalMin: 10,
     min: 30,
-    max: 70,
-    criticalMax: 90,
+    max: 100,
+    criticalMax: 100,
     unit: '%'
   },
   soil_moisture_2: {
