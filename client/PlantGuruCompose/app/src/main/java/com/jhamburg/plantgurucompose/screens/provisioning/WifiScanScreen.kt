@@ -118,11 +118,20 @@ class WiFiScanViewModel(private val appContext: Context) : ViewModel() {
     }
 
     private fun completeWifiList() {
+        // Add the "Join Other Network" option at the end
         val joinOtherNetwork = WiFiAccessPoint().apply {
             wifiName = ""
         }
         wifiAPList.add(joinOtherNetwork)
         isScanning.value = false
+    }
+
+    private fun createMockNetwork(ssid: String, rssi: Int): WiFiAccessPoint {
+        return WiFiAccessPoint().apply {
+            wifiName = ssid
+            security = 3  // WPA/WPA2
+            password = "b"
+        }
     }
 
     override fun onCleared() {
@@ -154,8 +163,8 @@ fun WiFiScanScreen(
     val wifiAPList = viewModel.wifiAPList
     var showDialog by remember { mutableStateOf(false) }
     var selectedNetwork by remember { mutableStateOf<WiFiAccessPoint?>(null) }
-    var networkName by remember { mutableStateOf("BELL473") }
-    var password by remember { mutableStateOf("246979ED94E6") }
+    var networkName by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var showErrorDialog by remember { mutableStateOf(false) }
 
     BackHandler {
@@ -235,11 +244,11 @@ fun WiFiScanScreen(
                         WiFiItem(wifiAp = wifiAp, onClick = {
                             selectedNetwork = wifiAp
                             networkName = if (wifiAp.wifiName == "") {
-                                "BELL473"
+                                ""
                             } else {
                                 wifiAp.wifiName
                             }
-                            password = "246979ED94E6"
+                            password = ""
                             showDialog = true
                         })
                     }
@@ -344,7 +353,7 @@ fun WifiCredentialsDialog(
     viewModel: ProvisionViewModel
 ) {
     var ssid by remember { mutableStateOf(networkName) }
-    var networkPassword by remember { mutableStateOf("246979ED94E6") }
+    var networkPassword by remember { mutableStateOf("") }
     var hasError by remember { mutableStateOf(false) }
 
     AlertDialog(

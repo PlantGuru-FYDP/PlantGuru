@@ -1,7 +1,6 @@
 const SensorData = require("../models/sensorModel");
 
 exports.getProjections = async (req, res) => {
-    // Filler projection for now, just a simple linear based on last value with decreasing confidence
     try {
         const { plant_id, sensor_type, num_points, granularity } = req.query;
         
@@ -10,57 +9,71 @@ exports.getProjections = async (req, res) => {
             return res.status(400).send({ message: 'Invalid sensor type' });
         }
 
-        const [firstData] = await SensorData.readFirstData(plant_id);
-        const [latestData] = await SensorData.readLatestData(plant_id);
-        
-        if (!latestData || latestData.length === 0 || !firstData || firstData.length === 0) {
-            return res.status(404).send({ message: 'No sensor data found for this plant' });
-        }
-
-        const totalHistoricalSpan = Math.floor(
-            (new Date(latestData[0].time_stamp) - new Date(firstData[0].time_stamp)) / (60 * 1000)
-        );
-
-        const maxPoints = Math.floor(totalHistoricalSpan / granularity);
-        const adjustedNumPoints = Math.min(num_points, maxPoints);
-
-        const lastValue = latestData[0][sensor_type];
         const now = new Date();
+        const timeRangeMs = granularity * 60 * 1000 * num_points;
         
-        const timeRangeMs = granularity * 60 * 1000 * adjustedNumPoints;
-        const startTime = new Date(now.getTime() - timeRangeMs);
-
+        // Get historical data from the past day only
+        const startTime = new Date(now.getTime() - (24 * 60 * 60 * 1000)); // 24 hours ago
         const historicalData = await SensorData.getTimeSeriesData(
             plant_id,
             startTime.toISOString(),
-            new Date(now.getTime() + timeRangeMs).toISOString(),
+            now.toISOString(),
             granularity
         );
 
-        let slope = 0;
-        if (historicalData.length >= 2) {
-            const lastPoint = historicalData[historicalData.length - 1];
-            const secondLastPoint = historicalData[historicalData.length - 2];
-            const valueDiff = lastPoint[sensor_type] - secondLastPoint[sensor_type];
-            slope = valueDiff / granularity;
+        if (!historicalData || historicalData.length === 0) {
+            return res.status(404).send({ message: 'No sensor data found for this plant' });
         }
 
-        const projections = [];
-        let currentTime = new Date(now);
-        const intervalMs = granularity * 60 * 1000;
-        let currentValue = historicalData.length > 0 
-            ? historicalData[historicalData.length - 1][sensor_type]
-            : latestData[0][sensor_type];
+        // Filter to only include data from now or earlier
+        const validHistoricalData = historicalData.filter(data => 
+            new Date(data.time_period) <= now
+        ).sort((a, b) => new Date(a.time_period) - new Date(b.time_period));
 
-        for (let i = 0; i < adjustedNumPoints; i++) {
-            const minutesFromNow = granularity * i;
-            const projectedValue = currentValue + (slope * minutesFromNow);
+        if (validHistoricalData.length < 2) {
+            return res.status(400).send({ message: 'Insufficient data for projections' });
+        }
+
+        // Calculate slope using last few points
+        const numPointsForSlope = Math.min(6, validHistoricalData.length);
+        const recentPoints = validHistoricalData.slice(-numPointsForSlope);
+        
+        // Calculate average rate of change per minute
+        const firstPoint = recentPoints[0];
+        const lastPoint = recentPoints[recentPoints.length - 1];
+        const timeDiffMinutes = (new Date(lastPoint.time_period) - new Date(firstPoint.time_period)) / (60 * 1000);
+        const valueDiff = lastPoint[sensor_type] - firstPoint[sensor_type];
+        const slope = timeDiffMinutes > 0 ? (valueDiff / timeDiffMinutes) : 0;
+
+        // Generate projections
+        const projections = [];
+        const lastHistoricalPoint = validHistoricalData[validHistoricalData.length - 1];
+        let currentTime = new Date(lastHistoricalPoint.time_period);
+        let currentValue = lastHistoricalPoint[sensor_type];
+
+        // Add first projection point matching last historical point
+        projections.push({
+            value: currentValue,
+            timestamp: currentTime.toISOString(),
+            confidence: 1.0
+        });
+
+        // Generate remaining projections
+        for (let i = 1; i < num_points; i++) {
+            const minutesFromStart = granularity * i;
+            let projectedValue = currentValue + (slope * minutesFromStart)-0.5;
+            
+            // Apply bounds
+            projectedValue = boundProjectedValue(projectedValue, sensor_type);
+            
+            // Simple linear decay in confidence
+            const confidence = Math.max(0.0, 1 - (2*i / num_points));
+            
             projections.push({
                 value: projectedValue,
-                timestamp: currentTime.toISOString(),
-                confidence: 1 - (i / adjustedNumPoints)
+                timestamp: new Date(currentTime.getTime() + (granularity * i * 60 * 1000)).toISOString(),
+                confidence
             });
-            currentTime = new Date(currentTime.getTime() + intervalMs);
         }
 
         return res.status(200).send({
@@ -68,17 +81,32 @@ exports.getProjections = async (req, res) => {
             sensor_type,
             granularity,
             requested_points: Number(num_points),
-            actual_points: adjustedNumPoints,
-            total_historical_minutes: totalHistoricalSpan,
+            actual_points: projections.length,
             last_reading: {
-                value: lastValue,
-                timestamp: latestData[0].time_stamp
+                value: lastHistoricalPoint[sensor_type],
+                timestamp: lastHistoricalPoint.time_period
             },
-            historicalData,
+            historicalData: validHistoricalData,
             projections
         });
     } catch (err) {
         console.error('Error in getProjections:', err);
         return res.status(500).send({ message: err.message });
     }
-}; 
+};
+
+function boundProjectedValue(value, sensorType) {
+    switch (sensorType) {
+        case 'humidity':
+        case 'soil_moisture_1':
+        case 'soil_moisture_2':
+            return Math.max(0, Math.min(100, value));
+        case 'light':
+            return Math.max(0, Math.min(100000, value));
+        case 'ext_temp':
+        case 'soil_temp':
+            return Math.max(-50, Math.min(100, value));
+        default:
+            return value;
+    }
+} 

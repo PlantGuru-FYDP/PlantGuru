@@ -144,3 +144,26 @@ CREATE TABLE DeviceProvisioning (
     FOREIGN KEY (plant_id) REFERENCES Plants(plant_id),
     UNIQUE KEY unique_plant_device (plant_id)
 );
+
+-- Create MoisturePredictions table for storing next dry threshold crossing
+CREATE TABLE MoisturePredictions (
+    prediction_id INT AUTO_INCREMENT PRIMARY KEY,
+    plant_id INT NOT NULL,
+    predicted_dry_time TIMESTAMP NOT NULL,
+    current_moisture FLOAT NOT NULL,
+    prediction_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (plant_id) REFERENCES Plants(plant_id) ON DELETE CASCADE,
+    INDEX idx_plant_predictions (plant_id, prediction_created_at DESC)
+);
+
+-- Create HourlyMoisturePredictions table for storing hourly predictions
+CREATE TABLE HourlyMoisturePredictions (
+    hourly_prediction_id INT AUTO_INCREMENT PRIMARY KEY,
+    plant_id INT NOT NULL,
+    predicted_moisture FLOAT NOT NULL,
+    prediction_for_time TIMESTAMP NOT NULL,
+    prediction_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (plant_id) REFERENCES Plants(plant_id) ON DELETE CASCADE,
+    INDEX idx_plant_hourly_predictions (plant_id, prediction_for_time),
+    INDEX idx_prediction_created (prediction_created_at DESC)
+);

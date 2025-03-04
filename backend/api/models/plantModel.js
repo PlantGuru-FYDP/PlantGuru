@@ -60,6 +60,15 @@ class Plant {
     return connection.query(cmd, [user_id]);
   }
 
+  static readAllPlants() {
+    const cmd = `
+      SELECT p.* 
+      FROM Plants p
+      LEFT JOIN DeletedPlants d ON p.plant_id = d.plant_id
+      WHERE d.plant_id IS NULL`;
+    return connection.query(cmd);
+  }
+
   getID() {
     const cmd =
       "Select plant_id from Plants where user_id = ? and plant_name = ?";

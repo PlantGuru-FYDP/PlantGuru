@@ -61,7 +61,7 @@ fun SensorCard(
                 color = borderColor,
                 shape = MaterialTheme.shapes.medium
             )
-            .height(if (sensorData.size >= 2) 120.dp else 80.dp),
+            .height(if (sensorData.size >= 2) 100.dp else 60.dp),
         colors = cardColors
     ) {
         Column(

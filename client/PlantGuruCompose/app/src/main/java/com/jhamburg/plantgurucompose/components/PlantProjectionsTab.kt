@@ -17,34 +17,28 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jhamburg.plantgurucompose.R
 import com.jhamburg.plantgurucompose.models.LoadingState
 import com.jhamburg.plantgurucompose.models.SensorData
 import com.jhamburg.plantgurucompose.models.SensorType
 import com.jhamburg.plantgurucompose.models.TimeRange
 import com.jhamburg.plantgurucompose.viewmodels.ProjectionsViewModel
-
-private val sensorTabs = listOf(
-    SensorType.SOIL_MOISTURE,
-    SensorType.SOIL_TEMP,
-    SensorType.EXTERNAL_TEMP,
-    SensorType.LIGHT,
-    SensorType.HUMIDITY
-)
+import com.jhamburg.plantgurucompose.viewmodels.WateringEventViewModel
+import java.time.LocalDateTime
 
 @Composable
 fun PlantProjectionsTab(
@@ -56,49 +50,27 @@ fun PlantProjectionsTab(
     projectionsViewModel: ProjectionsViewModel
 ) {
     val state by projectionsViewModel.state.collectAsState()
-    var selectedSensorTab by remember { mutableIntStateOf(sensorTabs.indexOf(selectedSensorType)) }
+    var showWateringEvents by remember { mutableStateOf(true) }
+    val wateringEventViewModel: WateringEventViewModel = viewModel()
+    val wateringEvents by wateringEventViewModel.wateringEvents.collectAsState()
 
-    LaunchedEffect(selectedTimeRange, selectedSensorType) {
+    LaunchedEffect(selectedTimeRange) {
         projectionsViewModel.getProjections(
             plantId = plantId,
-            sensorType = selectedSensorType.apiName,
+            sensorType = SensorType.SOIL_MOISTURE.apiName,
             numPoints = selectedTimeRange.numPoints,
             granularityMinutes = selectedTimeRange.defaultGranularity
+        )
+        
+        // Fetch watering events for the selected time range
+        val endTime = LocalDateTime.now()
+        val startTime = endTime.minusHours(selectedTimeRange.hours.toLong())
+        wateringEventViewModel.getWateringEvents(
+            plantId = plantId
         )
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
-            selectedTabIndex = selectedSensorTab,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            sensorTabs.forEachIndexed { index, type ->
-                Tab(
-                    selected = selectedSensorTab == index,
-                    onClick = {
-                        selectedSensorTab = index
-                        onSensorTypeSelected(type)
-                    },
-                    icon = {
-                        Icon(
-                            painter = painterResource(
-                                when (type) {
-                                    SensorType.SOIL_MOISTURE -> R.drawable.baseline_water_24
-                                    SensorType.SOIL_TEMP -> R.drawable.baseline_device_thermostat_24
-                                    SensorType.EXTERNAL_TEMP -> R.drawable.baseline_air_24
-                                    SensorType.LIGHT -> R.drawable.baseline_sunny_24
-                                    SensorType.HUMIDITY -> R.drawable.baseline_water_24
-                                    else -> R.drawable.baseline_device_thermostat_24
-                                }
-                            ),
-                            contentDescription = type.label
-                        )
-                    },
-                    text = { Text(type.label) }
-                )
-            }
-        }
-
         when (state.loadingState) {
             LoadingState.Loading -> {
                 Box(
@@ -133,38 +105,49 @@ fun PlantProjectionsTab(
                             .fillMaxWidth()
                             .padding(16.dp)
                     ) {
-                        val combinedData = buildList {
-                            addAll(state.historicalData)
-                            state.projections?.projections?.forEach { proj ->
-                                add(
-                                    SensorData(
-                                        plantId = plantId,
-                                        sensorId = -1,
-                                        timeStamp = proj.timestamp,
-                                        extTemp = if (selectedSensorType == SensorType.EXTERNAL_TEMP)
-                                            proj.value.toFloat() else 0f,
-                                        light = if (selectedSensorType == SensorType.LIGHT)
-                                            proj.value.toFloat() else 0f,
-                                        humidity = if (selectedSensorType == SensorType.HUMIDITY)
-                                            proj.value.toFloat() else 0f,
-                                        soilTemp = if (selectedSensorType == SensorType.SOIL_TEMP)
-                                            proj.value.toFloat() else 0f,
-                                        soilMoisture1 = if (selectedSensorType == SensorType.SOIL_MOISTURE)
-                                            proj.value.toFloat() else 0f,
-                                        soilMoisture2 = 0f,
-                                        confidence = proj.confidence
-                                    )
-                                )
-                            }
-                        }.sortedBy { it.timeStamp }
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Soil Moisture",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            
+                            Text(
+                                text = "Next predicted watering: Feb 19, 2024",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                        SensorDataGraph(
-                            sensorData = combinedData,
-                            wateringEvents = emptyList(),
-                            timeRange = selectedTimeRange,
-                            sensorType = selectedSensorType,
-                            showWateringEvents = false
-                        )
+                            val combinedData = buildList {
+                                addAll(state.historicalData)
+                                state.projections?.projections?.forEach { proj ->
+                                    add(
+                                        SensorData(
+                                            plantId = plantId,
+                                            sensorId = -1,
+                                            timeStamp = proj.timestamp,
+                                            extTemp = 0f,
+                                            light = 0f,
+                                            humidity = 0f,
+                                            soilTemp = 0f,
+                                            soilMoisture1 = proj.value.toFloat(),
+                                            soilMoisture2 = 0f,
+                                            confidence = proj.confidence
+                                        )
+                                    )
+                                }
+                            }.sortedBy { it.timeStamp }
+
+                            SensorDataGraph(
+                                sensorData = combinedData,
+                                wateringEvents = wateringEvents,
+                                timeRange = selectedTimeRange,
+                                sensorType = SensorType.SOIL_MOISTURE,
+                                showWateringEvents = showWateringEvents
+                            )
+                        }
                     }
                 } else {
                     Box(
@@ -176,6 +159,42 @@ fun PlantProjectionsTab(
                         Text("No data available")
                     }
                 }
+            }
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_water_24),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        "Watering Events",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                Switch(
+                    checked = showWateringEvents,
+                    onCheckedChange = { showWateringEvents = it }
+                )
             }
         }
 
