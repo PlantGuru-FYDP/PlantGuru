@@ -44,6 +44,12 @@ class HealthCheckSchedulerService {
 
     async runHealthChecks() {
         try {
+            // Disabled health check notifications
+            console.log('Health check notifications are disabled');
+            return;
+            
+            // Original code commented out
+            /*
             const currentTime = new Date().toLocaleTimeString();
             console.log(`Running health checks at ${currentTime}`);
             
@@ -53,6 +59,7 @@ class HealthCheckSchedulerService {
             for (const plantSettings of settings) {
                 await PlantHealthCheckService.checkPlantHealth(plantSettings.plant_id);
             }
+            */
         } catch (error) {
             console.error('Error running health checks:', error);
         }
