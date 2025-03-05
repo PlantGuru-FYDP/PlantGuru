@@ -1,11 +1,11 @@
-const { Matrix } = require('ml-matrix');
+const { Matrix, SVD } = require('ml-matrix');
 
 class ARMAXPredictor {
     constructor(config = {}) {
         this.useExternalInputs = config.useExternalInputs ?? false;
         this.ignoreWindowHours = config.ignoreWindowHours ?? 20;
-        this.maWindow = config.maWindow ?? 5;
-        this.minDecrease = config.minDecrease ?? 0.0001;
+        this.maWindow = config.maWindow ?? 1;
+        this.minDecrease = config.minDecrease ?? 0.01;
         this.beta = null;
         this.pastErrors = null;
         this.regressionWindow = 30; // minutes for slope calculation
@@ -47,14 +47,17 @@ class ARMAXPredictor {
      * @param {Array<Object>} sensorData - Array of sensor readings
      */
     async train(sensorData) {
+        console.log(`Starting ARMAX model training with ${sensorData.length} data points`);
+        
         // Filter out data in ignore window
         const validData = sensorData.filter(reading => 
             !reading.in_ignore_window && 
             reading.hours_since_watering >= this.ignoreWindowHours
         );
+        console.log(`Found ${validData.length} valid data points after filtering ignore window`);
 
         if (validData.length < this.regressionWindow) {
-            console.warn('Insufficient training data');
+            console.warn(`Insufficient training data: ${validData.length} points < ${this.regressionWindow} required`);
             this.beta = new Array(this.useExternalInputs ? 7 : 4).fill(0);
             return;
         }
@@ -62,12 +65,14 @@ class ARMAXPredictor {
         // Compute regression slope
         const moistureValues = validData.map(d => d.soil_moisture_1);
         const slopes = this.computeRegressionSlope(moistureValues);
+        console.log(`Computed regression slopes for ${slopes.length} points`);
 
         // Initialize past errors
         this.pastErrors = new Array(validData.length).fill(0);
 
         // Iteratively improve model with moving average errors
         for (let iteration = 0; iteration < 3; iteration++) {
+            console.log(`Starting iteration ${iteration + 1}/3 of model training`);
             const X = [];
             const y = [];
 
@@ -96,8 +101,10 @@ class ARMAXPredictor {
                 y.push(validData[t].soil_moisture_1);
             }
 
+            console.log(`Built training matrices: X(${X.length}x${X[0]?.length || 0}), y(${y.length})`);
+
             if (X.length === 0) {
-                console.warn('No valid training points');
+                console.warn('No valid training points after matrix construction');
                 return;
             }
 
@@ -113,33 +120,69 @@ class ARMAXPredictor {
             const yVector = Matrix.columnVector(y);
             
             try {
+                console.log('Attempting to solve matrix equation...');
                 const Xt = Xmatrix.transpose();
                 const XtX = Xt.mmul(Xmatrix);
-                const Xty = Xt.mmul(yVector);
                 
+                // Log matrix condition
+                console.log('Matrix dimensions:', {
+                    X: `${Xmatrix.rows}x${Xmatrix.columns}`,
+                    Xt: `${Xt.rows}x${Xt.columns}`,
+                    XtX: `${XtX.rows}x${XtX.columns}`
+                });
+
                 // Add regularization to make the system more stable
                 for (let i = 0; i < XtX.rows; i++) {
                     XtX.set(i, i, XtX.get(i, i) + 1e-6);
                 }
                 
-                // Solve the system using built-in solve method
+                const Xty = Xt.mmul(yVector);
+                
                 try {
-                    this.beta = XtX.solve(Xty).to1DArray();
+                    // Use SVD to solve the system
+                    const svd = new SVD(XtX);
+                    this.beta = svd.solve(Xty).to1DArray();
+                    
+                    // Log matrix properties using SVD
+                    const condition = svd.condition;
+                    const rank = svd.rank;
+                    
+                    console.log('Matrix properties:', {
+                        condition,
+                        rank,
+                        singular_values: svd.diagonal
+                    });
+                    
+                    console.log('Successfully solved matrix equation. Beta coefficients:', this.beta);
                 } catch (solveError) {
-                    console.warn('Matrix solve failed, using fallback method');
+                    console.warn('Matrix solve failed:', solveError.message);
                     // Fallback to simple persistence model
                     this.beta = new Array(X[0].length).fill(0);
                     this.beta[1] = 0.99; // Previous moisture coefficient
+                    console.log('Using fallback persistence model with beta:', this.beta);
                 }
 
                 // Update past errors for next iteration
-                const predictions = X.slice(0, -1).map(row => 
-                    row.reduce((sum, val, idx) => sum + val * this.beta[idx], 0)
-                );
-                this.pastErrors.splice(this.regressionWindow, predictions.length, 
-                    ...predictions.map((pred, idx) => y[idx] - pred));
+                if (this.beta) {
+                    const predictions = X.slice(0, -1).map(row => 
+                        row.reduce((sum, val, idx) => sum + val * this.beta[idx], 0)
+                    );
+                    this.pastErrors.splice(this.regressionWindow, predictions.length, 
+                        ...predictions.map((pred, idx) => y[idx] - pred));
+                    
+                    // Log prediction errors
+                    const mse = predictions.reduce((sum, pred, idx) => 
+                        sum + Math.pow(y[idx] - pred, 2), 0) / predictions.length;
+                    console.log(`Iteration ${iteration + 1} MSE: ${mse.toFixed(4)}`);
+                }
             } catch (error) {
-                console.error('Error solving linear system:', error);
+                console.error('Error in matrix operations:', error);
+                console.log('Matrix state:', {
+                    X_shape: [Xmatrix.rows, Xmatrix.columns],
+                    y_shape: [yVector.rows, yVector.columns],
+                    X_values: X.slice(0, 2),
+                    y_values: y.slice(0, 2)
+                });
                 // Fallback to simple persistence model
                 this.beta = new Array(X[0].length).fill(0);
                 this.beta[1] = 0.99; // Previous moisture coefficient
@@ -279,10 +322,13 @@ function getDryingCycles(sensorData, wateringEvents) {
  * @param {Object} db - Database connection
  * @param {number} plantId - Plant ID
  * @param {number} predictionHours - Hours to predict into future
+ * @returns {Object|null} Predictions object
  */
 async function updatePlantPredictions(db, plantId, predictionHours = 24) {
     try {
-        // Get all sensor data (we'll filter to relevant cycles later)
+        console.log(`Running moisture predictions update for plant ${plantId}...`);
+        
+        // Get all sensor data
         const [sensorData] = await db.query(`
             SELECT 
                 time_stamp,
@@ -292,16 +338,18 @@ async function updatePlantPredictions(db, plantId, predictionHours = 24) {
                 ext_temp
             FROM SensorData
             WHERE plant_id = ?
-            AND soil_moisture_1 IS NOT NULL  -- Ensure we have moisture readings
+            AND soil_moisture_1 IS NOT NULL
             ORDER BY time_stamp ASC
         `, [plantId]);
 
+        console.log(`Retrieved ${sensorData.length} sensor readings for plant ${plantId}`);
+
         if (!sensorData || sensorData.length === 0) {
             console.log(`No sensor data found for plant ${plantId}`);
-            return;
+            return null;
         }
 
-        // Get all watering events
+        // Get watering events
         const [wateringEvents] = await db.query(`
             SELECT time_stamp
             FROM WateringEvent
@@ -309,22 +357,36 @@ async function updatePlantPredictions(db, plantId, predictionHours = 24) {
             ORDER BY time_stamp ASC
         `, [plantId]);
 
+        console.log(`Retrieved ${wateringEvents.length} watering events for plant ${plantId}`);
+
         // Get drying cycles
         const cycles = getDryingCycles(sensorData, wateringEvents);
+        console.log(`Identified ${cycles.length} drying cycles`);
         
         if (cycles.length < 2) {  // Need at least 2 cycles (1 for training, 1 for current)
             console.log(`Insufficient cycles for plant ${plantId} (only ${cycles.length} cycles)`);
-            return;
+            return null;
         }
 
         // Get plant's moisture threshold from notification settings
         const [settings] = await db.query(`
-            SELECT soil_moisture_min
+            SELECT soil_moisture_min, soil_moisture_notifications
             FROM PlantNotificationSettings
             WHERE plant_id = ?
         `, [plantId]);
 
-        const moistureThreshold = settings.length > 0 ? settings[0].soil_moisture_min : 20;
+        const defaultThreshold = 40; // More conservative default threshold
+        const moistureThreshold = settings.length > 0 ? 
+            (settings[0].soil_moisture_min ?? defaultThreshold) : 
+            defaultThreshold;
+        
+        console.log(`Moisture threshold settings for plant ${plantId}:`, {
+            hasSettings: settings.length > 0,
+            notificationsEnabled: settings[0]?.soil_moisture_notifications,
+            configuredThreshold: settings[0]?.soil_moisture_min,
+            usingThreshold: moistureThreshold,
+            isDefault: settings.length === 0 || settings[0].soil_moisture_min === null
+        });
 
         // Mark ignore windows in each cycle
         const ignoreWindowHours = 20;
@@ -334,26 +396,29 @@ async function updatePlantPredictions(db, plantId, predictionHours = 24) {
             });
         });
 
-        // Use last 3 complete cycles for training (excluding current cycle)
-        const trainingCycles = cycles.slice(-4, -1);  // Take 3 cycles before the current one
+        // Use only the last complete cycle and current cycle for training
+        const trainingCycles = cycles.slice(-2);  // Take only last complete cycle and current cycle
         const currentCycle = cycles[cycles.length - 1];
+        console.log(`Using most recent cycle and current cycle for training. Current cycle has ${currentCycle.length} points`);
 
         // Combine training cycles
         const trainingData = trainingCycles.flat();
+        console.log(`Combined training data has ${trainingData.length} points`);
 
         if (trainingData.length < 30) {  // Need minimum points for meaningful prediction
             console.log(`Insufficient training data for plant ${plantId}`);
-            return;
+            return null;
         }
 
         // Initialize and train model
         const model = new ARMAXPredictor({
             useExternalInputs: false,
             ignoreWindowHours: 20,
-            minDecrease: 0.0001
+            minDecrease: 0.0002
         });
 
         await model.train(trainingData);
+        console.log('Model training completed');
 
         // Get current conditions (last point after ignore window in current cycle)
         const validCurrentData = currentCycle.filter(reading => 
@@ -363,42 +428,64 @@ async function updatePlantPredictions(db, plantId, predictionHours = 24) {
 
         if (validCurrentData.length === 0) {
             console.log(`No valid current data after ignore window for plant ${plantId}`);
-            return;
+            return null;
         }
 
         const currentReading = validCurrentData[validCurrentData.length - 1];
+        console.log(`Using current reading from ${currentReading.time_stamp} with moisture ${currentReading.soil_moisture_1}%`);
         
         // Make predictions
         const predictions = model.predict(currentReading, predictionHours * 60);
+        console.log(`Generated ${predictions.length} predictions`);
 
-        // Store hourly predictions
+        const referenceTime = new Date(currentReading.time_stamp);
+        
         const hourlyPredictions = predictions
             .filter((_, i) => i % 60 === 0)
-            .map((moisture, hour) => [
+            .map((moisture, hour) => ({
+                predicted_moisture: moisture,
+                prediction_for_time: new Date(referenceTime.getTime() + hour * 60 * 60 * 1000)
+            }));
+
+        // Find when moisture will drop below threshold
+        const dryIndex = predictions.findIndex(moisture => moisture < moistureThreshold);
+        const predictedDryTime = dryIndex !== -1 ? 
+            new Date(referenceTime.getTime() + dryIndex * 60 * 1000) : 
+            null;
+
+        // Store predictions in database
+        if (hourlyPredictions.length > 0) {
+            // Store hourly predictions
+            const hourlyPredictionValues = hourlyPredictions.map(pred => [
                 plantId,
-                moisture,
-                new Date(new Date(currentReading.time_stamp).getTime() + hour * 60 * 60 * 1000)
+                pred.predicted_moisture,
+                pred.prediction_for_time
             ]);
 
-        if (hourlyPredictions.length > 0) {
             await db.query(`
                 INSERT INTO HourlyMoisturePredictions 
                 (plant_id, predicted_moisture, prediction_for_time)
                 VALUES ?
-            `, [hourlyPredictions]);
+            `, [hourlyPredictionValues]);
+
+            // Store dry time prediction if available
+            if (predictedDryTime) {
+                await db.query(`
+                    INSERT INTO MoisturePredictions 
+                    (plant_id, predicted_dry_time, current_moisture)
+                    VALUES (?, ?, ?)
+                `, [plantId, predictedDryTime, currentReading.soil_moisture_1]);
+            }
         }
 
-        // Find when moisture will drop below threshold
-        const dryIndex = predictions.findIndex(moisture => moisture < moistureThreshold);
-        if (dryIndex !== -1) {
-            const dryTime = new Date(new Date(currentReading.time_stamp).getTime() + dryIndex * 60 * 1000);
-            await db.query(`
-                INSERT INTO MoisturePredictions 
-                (plant_id, predicted_dry_time, current_moisture)
-                VALUES (?, ?, ?)
-            `, [plantId, dryTime, currentReading.soil_moisture_1]);
-        }
+        console.log(`Prediction complete. Dry time: ${predictedDryTime ? predictedDryTime.toISOString() : 'not predicted'}`);
 
+        return {
+            hourlyPredictions,
+            predictedDryTime,
+            currentMoisture: currentReading.soil_moisture_1,
+            referenceTime
+        };
     } catch (error) {
         console.error(`Error updating predictions for plant ${plantId}:`, error);
         throw error;

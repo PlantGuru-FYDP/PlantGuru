@@ -2,12 +2,12 @@ const ModelingService = require('../services/modelingService');
 
 exports.model = async (req, res) => {
   try {
-    const plant_id = req.query.plant_id;
+    const { plant_id } = req.query;
     if (!plant_id) {
       return res.status(400).send({ message: "plant_id is required" });
     }
 
-    // Get the next predicted dry time
+    // Regular prediction flow
     const predictedDryTime = await ModelingService.getNextDryTime(plant_id);
     if (!predictedDryTime) {
       return res.status(404).send({ message: "No predictions available for this plant" });
@@ -24,9 +24,9 @@ exports.model = async (req, res) => {
       predicted_dry_time: predictedDryTime,
       hourly_predictions: hourlyPredictions
     });
-  } catch (err) {
-    console.error('Error in model endpoint:', err);
-    return res.status(500).send({ message: "Internal server error: " + err.message });
+  } catch (error) {
+    console.error('Error in model endpoint:', error);
+    return res.status(500).send({ message: "Internal server error" });
   }
 };
 

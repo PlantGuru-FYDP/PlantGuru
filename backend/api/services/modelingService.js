@@ -63,9 +63,10 @@ class ModelingService {
 
     async updatePlantPredictions(plant_id) {
         try {
-            await updatePlantPredictions(connection, plant_id, 24);
+            return await updatePlantPredictions(connection, plant_id, 24);
         } catch (error) {
             console.error(`Error updating predictions for plant ${plant_id}:`, error);
+            return null;
         }
     }
 
