@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, IconButton, Typography, Paper, Grid, TextField, Button, Select, MenuItem, FormControl, InputLabel, Modal } from '@mui/material';
+import { Box, IconButton, Typography, Paper, Grid, TextField, Button, Select, MenuItem, FormControl, InputLabel, Modal, Alert, List, ListItem, ListItemText } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -11,7 +11,6 @@ import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import CloudIcon from '@mui/icons-material/Cloud';
 import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
-import YouTube from 'react-youtube';
 import Logo from '../components/Logo';
 import ArchitectureIcon from '@mui/icons-material/Architecture';
 import MemoryIcon from '@mui/icons-material/Memory';
@@ -28,6 +27,15 @@ import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import CloseIcon from '@mui/icons-material/Close';
 import { Chart } from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
+import PersonIcon from '@mui/icons-material/Person';
+import BluetoothIcon from '@mui/icons-material/Bluetooth';
+import BluetoothSearchingIcon from '@mui/icons-material/BluetoothSearching';
+import EmailIcon from '@mui/icons-material/Email';
+import CloudSyncIcon from '@mui/icons-material/CloudSync';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+import WarningIcon from '@mui/icons-material/Warning';
 
 const FullscreenContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
@@ -465,11 +473,7 @@ const LiveDataDemo = () => {
   };
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Typography variant="h3" gutterBottom>
-        <SensorsIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
-        Real-Time Monitoring
-      </Typography>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Grid container spacing={4} sx={{ flexGrow: 1, minHeight: 0 }}>
         <Grid item xs={12} md={8} sx={{ height: '100%' }}>
           <Paper sx={{ 
@@ -490,7 +494,7 @@ const LiveDataDemo = () => {
             transition={{ delay: 0.3 }}
             style={{ height: '100%' }}
           >
-            <Paper sx={{ p: 2, height: '100%' }}>
+            <Paper sx={{ p: 2, height: '100%', overflow: 'auto' }}>
               <Typography variant="h6" gutterBottom>
                 Chart Controls
               </Typography>
@@ -612,9 +616,9 @@ const LiveDataDemo = () => {
   );
 };
 
-const MobileScreenshotCarousel = ({ handleImageClick }) => {
+const MobileScreenshotCarousel = ({ handleImageClick, screenshots }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const mobileScreenshots = [
+  const mobileScreenshots = screenshots || [
     {
       src: "/PlantGuru/presentation_images/screenshots/plant view-portrait.png",
       alt: "Plant Details View",
@@ -666,6 +670,13 @@ const MobileScreenshotCarousel = ({ handleImageClick }) => {
   };
 
   const getVisibleScreenshots = () => {
+    if (mobileScreenshots.length <= 3) {
+      return mobileScreenshots.map((screenshot, index) => ({
+        ...screenshot,
+        key: index
+      }));
+    }
+    
     const screenshots = [];
     for (let i = 0; i < 3; i++) {
       let index = (currentIndex + i) % mobileScreenshots.length;
@@ -687,121 +698,85 @@ const MobileScreenshotCarousel = ({ handleImageClick }) => {
       alignItems: 'center',
       position: 'relative'
     }}>
+      {mobileScreenshots.length > 1 && (
+        <IconButton
+          onClick={handlePrevImage}
+          sx={{
+            position: 'absolute',
+            left: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 1
+          }}
+        >
+          <ChevronLeftIcon />
+        </IconButton>
+      )}
       <Box sx={{
-        flex: 1,
-        width: '100%',
-        position: 'relative',
-        overflow: 'hidden',
         display: 'flex',
+        gap: 2,
         justifyContent: 'center',
         alignItems: 'center',
-        px: 12
+        height: '100%'
       }}>
-        <IconButton 
-          sx={{ 
-            position: 'absolute', 
-            left: 24,
-            top: '50%', 
-            transform: 'translateY(-50%)',
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.9)'
-            },
-            zIndex: 2
-          }}
-          onClick={handlePrevImage}
-        >
-          <ArrowBackIcon />
-        </IconButton>
-
-        <Box sx={{
-          position: 'relative',
-          height: '100%',
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center'
-        }}>
-          {getVisibleScreenshots().map((screenshot, index) => (
-            <Box
-              key={screenshot.key}
-              sx={{
-                position: 'absolute',
-                width: '30%',
-                height: '100%',
-                left: `${index * 35}%`,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center'
-              }}
-            >
-              <Typography variant="subtitle1" align="center" sx={{ mt: 1 }}>
-                {screenshot.title}
-              </Typography>
-              <Box sx={{
-                height: '90%',
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center'
-              }}>
-                <ClickableImage
-                  src={screenshot.src}
-                  alt={screenshot.alt}
-                  onClick={() => handleImageClick(screenshot.src)}
-                  style={{ 
-                    height: '100%',
-                    width: 'auto',
-                    maxWidth: '100%',
-                    objectFit: 'contain',
-                    borderRadius: 8,
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                  }}
-                />
-              </Box>
- 
-            </Box>
-          ))}
-        </Box>
-
-        <IconButton 
-          sx={{ 
-            position: 'absolute', 
-            right: 24,
-            top: '50%', 
-            transform: 'translateY(-50%)',
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.9)'
-            },
-            zIndex: 2
-          }}
-          onClick={handleNextImage}
-        >
-          <ArrowForwardIcon />
-        </IconButton>
-      </Box>
-
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        gap: 1,
-        mt: 2
-      }}>
-        {mobileScreenshots.map((_, index) => (
+        {getVisibleScreenshots().map((screenshot) => (
           <Box
-            key={index}
-            onClick={() => setCurrentIndex(index)}
+            key={screenshot.key}
             sx={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              backgroundColor: index === currentIndex ? 'primary.main' : 'grey.300',
-              cursor: 'pointer',
-              transition: 'background-color 0.3s'
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
             }}
-          />
+          >
+            <Box
+              component="img"
+              src={screenshot.src}
+              alt={screenshot.alt}
+              onClick={() => handleImageClick(screenshot.src)}
+              sx={{
+                height: '90%',
+                width: 'auto',
+                objectFit: 'contain',
+                cursor: 'pointer'
+              }}
+            />
+            <Typography variant="subtitle1" align="center" sx={{ mt: 1 }}>
+              {screenshot.title}
+            </Typography>
+          </Box>
         ))}
       </Box>
+      {mobileScreenshots.length > 1 && (
+        <IconButton
+          onClick={handleNextImage}
+          sx={{
+            position: 'absolute',
+            right: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 1
+          }}
+        >
+          <ChevronRightIcon />
+        </IconButton>
+      )}
+      {mobileScreenshots.length > 1 && (
+        <Box sx={{ mt: 2 }}>
+          {mobileScreenshots.map((_, index) => (
+            <FiberManualRecordIcon
+              key={index}
+              sx={{
+                fontSize: 12,
+                mx: 0.5,
+                color: index === currentIndex ? 'primary.main' : 'grey.400',
+                cursor: 'pointer'
+              }}
+              onClick={() => setCurrentIndex(index)}
+            />
+          ))}
+        </Box>
+      )}
     </Box>
   );
 };
@@ -1019,6 +994,7 @@ const slides = [
       </Grid>
     ),
   },
+  /*
   {
     title: 'System Overview',
     content: (props) => (
@@ -1469,6 +1445,7 @@ const slides = [
       </Grid>
     ),
   },
+ 
   {
     title: 'Demo - Hardware',
     content: (props) => (
@@ -1587,186 +1564,574 @@ const slides = [
         </Grid>
       </Grid>
     ),
-  },
+  }, */
   {
-    title: 'Product Video',
-    content: (
-      <Box sx={{ 
-        height: '100vh',
-        width: '100%',   
-        position: 'relative',
-        mx: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center'
-      }}>
-        <Box sx={{
-          flex: 1,
-          position: 'relative',
-          width: '100%',
-          '& iframe': {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            borderRadius: 2,
-          }
-        }}>
-          <YouTube
-            videoId="dQw4w9WgXcQ"
-            opts={{
-              width: '100%',
-              height: '100%',
-              playerVars: {
-                autoplay: 1,
-                mute: 1,
-                controls: 1,
-                modestbranding: 1,
-                rel: 0,
-                showinfo: 0,
-                fs: 1,
-              },
-            }}
-          />
-        </Box>
-      </Box>
-    ),
-  },
-  {
-    title: 'Live Data Demo',
-    content: <LiveDataDemo />
-  },
-   {
-    title: 'Results',
+    title: "Spec 1: User Accounts Management",
     content: (props) => (
-      <Grid container spacing={4}>
+      <Grid container spacing={3} sx={{ p: 2 }}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
-            <QueryStatsIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
-            Project Results
+            <PersonIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 1: User Accounts Management
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            Users can create accounts and modify account details
           </Typography>
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <Box sx={{ mb: 2 }}>
-              <Box sx={{ 
-                height: '40vh',
-                display: 'flex',
-                flexDirection: 'column'
-              }}>
-                <Box sx={{
-                  flex: 1,
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <ClickableImage 
-                    src="/PlantGuru/presentation_images/data_model.png"
-                    alt="Model Prediction Accuracy"
-                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/data_model.png")}
-                    style={{ 
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                      borderRadius: 8,
-                      boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                    }}
-                  />
-                </Box>
-              </Box>
-              <Typography variant="body2" align="center" sx={{ mt: 1 }}>
-                Model Prediction Results
-              </Typography>
-            </Box>
+            <MobileScreenshotCarousel 
+              handleImageClick={props.handleImageClick}
+              screenshots={[
+                {
+                  src: "/PlantGuru/presentation_images/specs_proof/login.jpg",
+                  alt: "Login Screen",
+                  title: "Login Screen"
+                },
+                {
+                  src: "/PlantGuru/presentation_images/specs_proof/signup.jpg",
+                  alt: "Signup Screen",
+                  title: "Sign Up Screen"
+                },
+                {
+                  src: "/PlantGuru/presentation_images/specs_proof/editprofile.jpg",
+                  alt: "Edit Profile Screen",
+                  title: "Edit Profile Screen"
+                }
+              ]}
+            />
           </motion.div>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <Box sx={{ mb: 2 }}>
-              <Box sx={{ 
-                height: '40vh',
-                display: 'flex',
-                flexDirection: 'column'
-              }}>
-                <Box sx={{
-                  flex: 1,
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <ClickableImage 
-                    src="/PlantGuru/presentation_images/moisture_animation_purple_coleus_event3_hybrid-ezgif.com-video-to-gif-converter.gif"
-                    alt="System Performance"
-                    onClick={() => props.handleImageClick("/PlantGuru/presentation_images/moisture_animation_purple_coleus_event3_hybrid-ezgif.com-video-to-gif-converter.gif")}
-                    style={{ 
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                      borderRadius: 8,
-                      boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                    }}
-                  />
-                </Box>
-              </Box>
-              <Typography variant="body2" align="center" sx={{ mt: 1 }}>
-                Real-time Soil Moisture Prediction
-              </Typography>
-            </Box>
-          </motion.div>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 2: Bluetooth Registration",
+    content: (props) => (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <BluetoothIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 2: Bluetooth Registration
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            Devices can be registered to a user account over a Bluetooth connection.
+          </Typography>
         </Grid>
         <Grid item xs={12}>
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.7 }}
+            transition={{ delay: 0.3 }}
           >
-            <Typography variant="h6" gutterBottom>
-              Key Achievements
+            <MobileScreenshotCarousel 
+              handleImageClick={props.handleImageClick}
+              screenshots={[
+                {
+                  src: "/PlantGuru/presentation_images/screenshots/provision step 1 bluetooth-portrait.png",
+                  alt: "Device Setup - Bluetooth",
+                  title: "Step 1: Bluetooth Connection"
+                },
+                {
+                  src: "/PlantGuru/presentation_images/screenshots/provision step 2 wifi select-portrait.png",
+                  alt: "Device Setup - WiFi Selection",
+                  title: "Step 2: WiFi Network Selection"
+                },
+                {
+                  src: "/PlantGuru/presentation_images/screenshots/provision step 3 wifi password-portrait.png",
+                  alt: "Device Setup - WiFi Password",
+                  title: "Step 3: WiFi Password Entry"
+                },
+                {
+                  src: "/PlantGuru/presentation_images/screenshots/provision step 4 connecting-portrait.png",
+                  alt: "Device Setup - Connecting",
+                  title: "Step 4: Device Registration"
+                }
+              ]}
+            />
+          </motion.div>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 3: Database",
+    content: (props) => (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <StorageIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 3: Database
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            Database shall store user account information, sensor history, notification information, and sensor registration
+          </Typography>
+        </Grid>
+        <Grid item xs={12} sx={{ height: 'calc(100vh - 200px)' }}>
+          <LiveDataDemo />
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 4: Soil Moisture Predictive Model",
+    content: (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <QueryStatsIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 4: Soil Moisture Predictive Model
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            Model shall take as input soil moisture, light, external temperature, soil temperature and predict next watering time
+          </Typography>
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+            <img 
+              src="/PlantGuru/presentation_images/specs_proof/purple_predictions/feb21_mar020818pm.jpg" 
+              alt="Soil Moisture Prediction Example"
+              style={{ maxHeight: '500px', width: 'auto' }}
+            />
+          </Box>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 5: Bluetooth Live Sensor Data Monitoring",
+    content: (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <BluetoothSearchingIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 5: Bluetooth Live Sensor Data Monitoring
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            The mobile app will be able to connect to and get live data from the embedded device via Bluetooth
+          </Typography>
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h6" color="error.main" gutterBottom>
+              Specification Not Included in Final Version
             </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={4}>
-                <Box sx={{ p: 2, borderLeft: 3, borderColor: 'success.main' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                    <SpeedIcon sx={{ color: 'success.main' }} />
-                    <Typography variant="body1">
-                      <strong>Model Accuracy:</strong> Achieved 98.5% accuracy in predicting optimal watering times
-                    </Typography>
-                  </Box>
-                </Box>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Box sx={{ p: 2, borderLeft: 3, borderColor: 'success.main' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                    <BatteryChargingFullIcon sx={{ color: 'success.main' }} />
-                    <Typography variant="body1">
-                      <strong>Battery Life:</strong> 30+ days of continuous operation on a single charge
-                    </Typography>
-                  </Box>
-                </Box>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Box sx={{ p: 2, borderLeft: 3, borderColor: 'success.main' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                    <NotificationsActiveIcon sx={{ color: 'success.main' }} />
-                    <Typography variant="body1">
-                      <strong>Response Time:</strong> Real-time notifications within 5 seconds of critical events
-                    </Typography>
-                  </Box>
-                </Box>
-              </Grid>
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              While we successfully implemented Bluetooth live sensor monitoring, it had to be removed from the final version due to conflicts with the Bluetooth provisioning library. The feature was working in development, but keeping it would have compromised the reliability of the device registration process. Since sensor data was already accessible through WiFi, we decided to prioritize stable device registration over redundant Bluetooth monitoring capabilities.
+            </Typography>
+          </Box>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 6: Data Visualization",
+    content: (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <TimelineIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 6: Data Visualization
+          </Typography>
+          <Typography variant="body1">
+            The mobile app will be able to display sensor and model-generated data via charts/graphs
+          </Typography>
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+            <img 
+              src="/PlantGuru/presentation_images/specs_proof/purple_predictions/feb21_mar020818pm.jpg" 
+              alt="Soil Moisture Prediction Example"
+              style={{ maxHeight: '500px', width: 'auto' }}
+            />
+          </Box>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 7: Mobile Notifications",
+    content: (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <NotificationsActiveIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 7: Mobile Notifications
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            The mobile app will be able to generate notifications for watering times, based on real-time sensor data rather than predictions. Notifications are sent when actual soil moisture levels reach the configured threshold.
+          </Typography>
+          <Alert severity="info" sx={{ mt: 2 }}>
+            Note: While the app includes a predictive model, notifications are intentionally based on real sensor readings rather than predictions to ensure reliability.
+          </Alert>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 8: Email Notifications",
+    content: (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <EmailIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 8: Email Notifications
+          </Typography>
+          <Typography variant="body1">
+            Users will receive an email notifying them when the moisture level of soil falls below the "dry" threshold
+          </Typography>
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+            <img 
+              src="/PlantGuru/presentation_images/specs_proof/email.png" 
+              alt="Email Notification Example"
+              style={{ maxHeight: '500px', width: 'auto' }}
+            />
+          </Box>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 9: Backend Live Updates",
+    content: (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <CloudSyncIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 9: Backend Live Updates
+          </Typography>
+          <Typography variant="body1">
+            The mobile app will be able to retrieve live sensor data from the backend
+          </Typography>
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+            <img 
+              src="/PlantGuru/presentation_images/specs_proof/soil moisture history.jpg" 
+              alt="Live Updates Example"
+              style={{ maxHeight: '500px', width: 'auto' }}
+            />
+          </Box>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 10: Sensor Update Embedded System to Backend",
+    content: (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <SettingsSystemDaydreamIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 10: Sensor Update Embedded System to Backend
+          </Typography>
+          <Typography variant="body1">
+            The embedded system will be able to send sensor data to the backend. (Shown from previous specs)
+          </Typography>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 11: Predict Soil Moisture Levels",
+    content: (props) => (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <WarningIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2, color: 'warning.main' }} />
+            Spec 11: Predict Soil Moisture Levels
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            The model predicts soil moisture levels and next watering time. However, current predictions show significant error margins.
+          </Typography>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Warning: Current model predictions have an average error of several hours. Actual watering time was March 1st, 1:00 PM.
+          </Alert>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" gutterBottom>Prediction Results:</Typography>
+              <List>
+                <ListItem>
+                  <ListItemText 
+                    primary="Feb 21 → Mar 2, 8:18 PM" 
+                    secondary="Error: +31.8 hours (26.5%)"
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText 
+                    primary="Feb 23 → Mar 7, 11:10 PM" 
+                    secondary="Error: +154.2 hours (128.5%)"
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText 
+                    primary="Feb 26 → Mar 1, 4:55 AM" 
+                    secondary="Error: -8.1 hours (6.8%)"
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemText 
+                    primary="Feb 27 → Mar 1, 10:45 PM" 
+                    secondary="Error: +9.75 hours (8.1%)"
+                  />
+                </ListItem>
+              </List>
             </Grid>
+            <Grid item xs={12} md={6}>
+              <MobileScreenshotCarousel
+                handleImageClick={props.handleImageClick}
+                screenshots={[
+                  {
+                    src: "/PlantGuru/presentation_images/specs_proof/purple_predictions/feb21_mar020818pm.jpg",
+                    alt: "Feb 21 Prediction",
+                    title: "Feb 21 → Mar 2, 8:18 PM"
+                  },
+                  {
+                    src: "/PlantGuru/presentation_images/specs_proof/purple_predictions/feb23_mar071110pm.jpg",
+                    alt: "Feb 23 Prediction",
+                    title: "Feb 23 → Mar 7, 11:10 PM"
+                  },
+                  {
+                    src: "/PlantGuru/presentation_images/specs_proof/purple_predictions/feb26_mar010455am.jpg",
+                    alt: "Feb 26 Prediction",
+                    title: "Feb 26 → Mar 1, 4:55 AM"
+                  },
+                  {
+                    src: "/PlantGuru/presentation_images/specs_proof/purple_predictions/feb27_mar011045pm.jpg",
+                    alt: "Feb 27 Prediction",
+                    title: "Feb 27 → Mar 1, 10:45 PM"
+                  },
+                  {
+                    src: "/PlantGuru/presentation_images/specs_proof/purple_predictions/models_comparison.png",
+                    alt: "Model Comparison",
+                    title: "Model Comparison"
+                  }
+                ]}
+              />
+            </Grid>
+          </Grid>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 12: Sensor Setup Time",
+    content: (props) => (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <SpeedIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 12: Sensor Setup Time
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            Sensors should be able to be registered to an account within 1 minute of app startup
+          </Typography>
+        </Grid>
+        <Grid item xs={12}>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <MobileScreenshotCarousel 
+              handleImageClick={props.handleImageClick}
+              screenshots={[
+                {
+                  src: "/PlantGuru/presentation_images/specs_proof/timing.gif",
+                  alt: "Sensor Setup Timing",
+                  title: "Setup Time Demo"
+                }
+              ]}
+            />
+          </motion.div>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 13: Sensor Response Time",
+    content: (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <MonitorHeartIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 13: Sensor Response Time
+          </Typography>
+          <Typography variant="body1">
+            When detecting a watering event, no more than 5 seconds should pass before a watering notification is sent to the mobile app
+          </Typography>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 14: Size Requirements",
+    content: (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <MemoryIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 14: WiFi Data Size Requirement
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            Size of Data: Embedded system should send no more than 5KB of data per day over Wi-Fi
+          </Typography>
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h6" color="error.main" gutterBottom>
+              Specification Not Achieved
+            </Typography>
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              This specification was intentionally not met to prioritize data collection quality. We decided to send more frequent sensor readings to gather higher resolution data for our predictive model and provide more accurate plant monitoring. The increased data transmission was deemed necessary for better plant care and more accurate predictions, outweighing the original data size constraint.
+            </Typography>
+          </Box>
+        </Grid>
+      </Grid>
+    )
+  },
+  {
+    title: "Spec 15: Embedded Software Size",
+    content: (props) => (
+      <Grid container spacing={3} sx={{ p: 2 }}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <MemoryIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Spec 15: Embedded Software Size
+          </Typography>
+          <Typography variant="body1">
+            Size of Embedded Software: The size of the Embedded Application should not exceed 4MB
+          </Typography>
+        </Grid>
+        <Grid item xs={12}>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Box sx={{
+              width: '100%',
+              maxWidth: '400px',
+              margin: '0 auto',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}>
+              <Box
+                component="img"
+                src="/PlantGuru/presentation_images/specs_proof/board memory.png"
+                alt="Board Memory Usage"
+                onClick={() => props.handleImageClick("/PlantGuru/presentation_images/specs_proof/board memory.png")}
+                sx={{
+                  height: '90%',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  cursor: 'pointer'
+                }}
+              />
+              <Typography variant="subtitle1" align="center" sx={{ mt: 1 }}>
+                Memory Usage
+              </Typography>
+            </Box>
+          </motion.div>
+        </Grid>
+      </Grid>
+    )
+  },/*
+  {
+    title: "Results",
+    content: (props) => (
+      <Grid container spacing={4}>
+        <Grid item xs={12}>
+          <Typography variant="h3" gutterBottom>
+            <MemoryIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Technical Specifications
+          </Typography>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <motion.div
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+              <Typography variant="h6" gutterBottom>
+                Size Requirements
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="subtitle1" color="primary">
+                    Embedded Software Size
+                  </Typography>
+                  <Typography variant="body1">
+                    • Current size: 3.2MB
+                  </Typography>
+                  <Typography variant="body1">
+                    • Required: less than 4MB
+                  </Typography>
+                  <Typography variant="body1" color="success.main">
+                    ✓ Requirement met (20% under limit)
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" color="primary">
+                    Daily Data Transfer
+                  </Typography>
+                  <Typography variant="body1">
+                    • Average usage: 4.2KB/day
+                  </Typography>
+                  <Typography variant="body1">
+                    • Required: less than 5KB/day
+                  </Typography>
+                  <Typography variant="body1" color="success.main">
+                    ✓ Requirement met (16% under limit)
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+          </motion.div>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <motion.div
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+              <Typography variant="h6" gutterBottom>
+                Time Requirements
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="subtitle1" color="primary">
+                    Setup Time
+                  </Typography>
+                  <Typography variant="body1">
+                    • Average setup: 45 seconds
+                  </Typography>
+                  <Typography variant="body1">
+                    • Required: less than 60 seconds
+                  </Typography>
+                  <Typography variant="body1" color="success.main">
+                    ✓ Requirement met (25% faster)
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" color="primary">
+                    Notification Response
+                  </Typography>
+                  <Typography variant="body1">
+                    • Average delay: 3.2 seconds
+                  </Typography>
+                  <Typography variant="body1">
+                    • Required: less than 5 seconds
+                  </Typography>
+                  <Typography variant="body1" color="success.main">
+                    ✓ Requirement met (36% faster)
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
           </motion.div>
         </Grid>
       </Grid>
     ),
-  },
+  },*/
 ];
 
 export default function DisplayPresentation() {
