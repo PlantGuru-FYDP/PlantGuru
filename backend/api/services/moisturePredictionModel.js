@@ -363,7 +363,7 @@ async function updatePlantPredictions(db, plantId, predictionHours = 24) {
         const cycles = getDryingCycles(sensorData, wateringEvents);
         console.log(`Identified ${cycles.length} drying cycles`);
         
-        if (cycles.length < 2) {  // Need at least 2 cycles (1 for training, 1 for current)
+        if (cycles.length < 1) {  // Need at least 1 cycle for training
             console.log(`Insufficient cycles for plant ${plantId} (only ${cycles.length} cycles)`);
             return null;
         }
@@ -396,16 +396,12 @@ async function updatePlantPredictions(db, plantId, predictionHours = 24) {
             });
         });
 
-        // Use only the last complete cycle and current cycle for training
-        const trainingCycles = cycles.slice(-2);  // Take only last complete cycle and current cycle
+        // Get the last complete cycle for training
+        const trainingCycle = cycles[cycles.length - 2] || cycles[cycles.length - 1];
         const currentCycle = cycles[cycles.length - 1];
-        console.log(`Using most recent cycle and current cycle for training. Current cycle has ${currentCycle.length} points`);
+        console.log(`Using last complete cycle for training with ${trainingCycle.length} points`);
 
-        // Combine training cycles
-        const trainingData = trainingCycles.flat();
-        console.log(`Combined training data has ${trainingData.length} points`);
-
-        if (trainingData.length < 30) {  // Need minimum points for meaningful prediction
+        if (trainingCycle.length < 30) {  // Need minimum points for meaningful prediction
             console.log(`Insufficient training data for plant ${plantId}`);
             return null;
         }
@@ -417,21 +413,11 @@ async function updatePlantPredictions(db, plantId, predictionHours = 24) {
             minDecrease: 0.0002
         });
 
-        await model.train(trainingData);
+        await model.train([trainingCycle]); // Train on just the last complete cycle
         console.log('Model training completed');
 
-        // Get current conditions (last point after ignore window in current cycle)
-        const validCurrentData = currentCycle.filter(reading => 
-            !reading.in_ignore_window && 
-            reading.hours_since_watering >= ignoreWindowHours
-        );
-
-        if (validCurrentData.length === 0) {
-            console.log(`No valid current data after ignore window for plant ${plantId}`);
-            return null;
-        }
-
-        const currentReading = validCurrentData[validCurrentData.length - 1];
+        // Get current reading - if in ignore window, use the last reading from current cycle
+        const currentReading = currentCycle[currentCycle.length - 1];
         console.log(`Using current reading from ${currentReading.time_stamp} with moisture ${currentReading.soil_moisture_1}%`);
         
         // Make predictions
