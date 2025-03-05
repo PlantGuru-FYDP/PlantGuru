@@ -1759,8 +1759,15 @@ const slides = [
           <Typography variant="body1" gutterBottom>
             The mobile app will be able to generate notifications for watering times, based on real-time sensor data rather than predictions. Notifications are sent when actual soil moisture levels reach the configured threshold.
           </Typography>
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+            <img 
+              src="/PlantGuru/presentation_images/specs_proof/watering notification.jpg" 
+              alt="Watering Notification Example"
+              style={{ maxHeight: '500px', width: 'auto' }}
+            />
+          </Box>
           <Alert severity="info" sx={{ mt: 2 }}>
-            Note: While the app includes a predictive model, notifications are intentionally based on real sensor readings rather than predictions to ensure reliability.
+            Note: While the app includes a predictive model, notifications are intentionally based on real sensor readings rather than predictions.
           </Alert>
         </Grid>
       </Grid>
