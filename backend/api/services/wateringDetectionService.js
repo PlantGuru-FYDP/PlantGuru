@@ -3,6 +3,7 @@ const NotificationService = require("./notificationService");
 const DeviceToken = require("../models/deviceTokenModel");
 const Plant = require("../models/plantModel");
 const SensorData = require("../models/sensorModel");
+const NotificationSettings = require('../models/notificationSettingsModel');
 
 class WateringDetectionService {
     constructor() {
@@ -78,10 +79,9 @@ class WateringDetectionService {
             if (!plantDetails.length) return;
 
             const plant = plantDetails[0];
-            const [tokens] = await DeviceToken.getTokensByUserId(plant.user_id);
+            const tokens = await DeviceToken.getTokensByUserId(plant.user_id);
             if (!tokens.length) return;
 
-            const deviceTokens = tokens.map(t => t.token);
             const title = `${plant.plant_name} Watering Detected`;
             const body = `Watering event detected (${Math.round(wateringEvent.watering_duration / 60)} minutes)`;
 
@@ -93,7 +93,7 @@ class WateringDetectionService {
                 isAutoDetected: 'true'
             };
 
-            await NotificationService.sendNotification(deviceTokens, title, body, data);
+            await NotificationService.sendNotification(tokens, title, body, data);
         } catch (error) {
             console.error('Error sending watering notification:', error);
         }
