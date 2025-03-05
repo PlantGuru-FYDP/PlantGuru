@@ -13,6 +13,12 @@ class WateringDetectionService {
         this.lastWateringTimes = new Map(); // plant_id -> last watering time
     }
 
+    getAdjustedTime() {
+        const now = new Date();
+        now.setDate(now.getDate() - 7); // Subtract 7 days
+        return now;
+    }
+
     async detectWateringEvent(plant_id, currentData) {
         try {
             // Check cooldown period
@@ -32,6 +38,9 @@ class WateringDetectionService {
             const moistureIncrease = currentData.soil_moisture_1 - previousReading.soil_moisture_1;
 
             if (moistureIncrease >= this.MOISTURE_INCREASE_THRESHOLD) {
+                const detectionTime = this.getAdjustedTime();
+                console.log(`[${detectionTime.toISOString()}] Watering event detected for plant ${plant_id} - Moisture increase: ${moistureIncrease.toFixed(2)}%`);
+
                 // Look back up to MAX_EVENT_DURATION_MINS to find peak moisture
                 const lookbackTime = new Date(currentData.time_stamp);
                 lookbackTime.setMinutes(lookbackTime.getMinutes() - this.MAX_EVENT_DURATION_MINS);
@@ -58,7 +67,8 @@ class WateringDetectionService {
                         avg_moisture: avgMoisture,
                         plant_id: plant_id,
                         time_stamp: currentData.time_stamp,
-                        volume: null // We can't measure this directly
+                        volume: null, // We can't measure this directly
+                        detection_time: detectionTime.toISOString() // Store detection time
                     });
 
                     await wateringEvent.uploadData();
@@ -75,6 +85,9 @@ class WateringDetectionService {
 
     async sendWateringNotification(plant_id, wateringEvent) {
         try {
+            const notificationStartTime = this.getAdjustedTime();
+            console.log(`[${notificationStartTime.toISOString()}] Starting to send notification for plant ${plant_id}`);
+
             const [plantDetails] = await Plant.readDataById(plant_id);
             if (!plantDetails.length) return;
 
@@ -90,10 +103,14 @@ class WateringDetectionService {
                 plantId: plant_id.toString(),
                 wateringDuration: wateringEvent.watering_duration.toString(),
                 timestamp: wateringEvent.time_stamp,
+                detectionTime: wateringEvent.detection_time,
+                notificationTime: notificationStartTime.toISOString(),
                 isAutoDetected: 'true'
             };
 
             await NotificationService.sendNotification(tokens, title, body, data);
+            const completionTime = this.getAdjustedTime();
+            console.log(`[${completionTime.toISOString()}] Notification sent successfully for plant ${plant_id}`);
         } catch (error) {
             console.error('Error sending watering notification:', error);
         }
