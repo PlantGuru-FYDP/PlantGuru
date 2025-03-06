@@ -5,15 +5,13 @@ import ArticleIcon from '@mui/icons-material/Article';
 import PresentationIcon from '@mui/icons-material/Slideshow';
 import MonitorIcon from '@mui/icons-material/MonitorHeart';
 import DownloadIcon from '@mui/icons-material/Download';
+import MusicPlayer from '../components/MusicPlayer';
 
 export default function Home() {
   return (
     <Box>
       <Typography variant="h2" component="h1" gutterBottom>
-        PlantGuru Smart Home Device
-      </Typography>
-      <Typography variant="h5" component="h2" gutterBottom color="text.secondary" sx={{ maxWidth: '800px', mb: 4 }}>
-        The intelligent solution for plant care, combining smart monitoring with predictive technology to ensure your plants thrive.
+        PlantGuru - The Intelligent Plant Care Solution
       </Typography>
       <Grid container spacing={3} sx={{ mt: 2 }}>
         <Grid item xs={12} md={6}>
@@ -40,32 +38,20 @@ export default function Home() {
           </Paper>
         </Grid>
         <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Key Features
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Typography component="ul">
-                  <li>Comprehensive sensor suite (light, soil moisture, and temperature)</li>
-                  <li>Cloud-based predictive modeling for personalized care</li>
-                  <li>Adaptive watering schedule recommendations</li>
-                  <li>Real-time plant health monitoring</li>
-                </Typography>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Typography component="ul">
-                  <li>Detailed plant health reporting</li>
-                  <li>User-friendly mobile application</li>
-                  <li>Smart notifications and reminders</li>
-                  <li>All-in-one integrated solution</li>
-                </Typography>
-              </Grid>
-            </Grid>
-          </Paper>
+          <Box 
+            sx={{ 
+              mb: 0,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}
+          >
+        <MusicPlayer />
+        </Box>
         </Grid>
         <Grid item xs={12}>
-          <Paper sx={{ p: 3, mt: 3 }}>
+          <Paper sx={{ p: 3, mt: 0 }}>
             <Typography variant="h6" gutterBottom>
               Quick Links
             </Typography>
@@ -114,7 +100,6 @@ export default function Home() {
                 >
                   Install App
                 </Button>
-               
               </Box>
             </Stack>
           </Paper>
