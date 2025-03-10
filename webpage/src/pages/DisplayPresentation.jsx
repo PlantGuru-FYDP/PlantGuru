@@ -953,7 +953,7 @@ const slides = [
                 Smart Monitoring
               </Typography>
               <Typography variant="body1">
-                Create an intelligent device that monitors plant health through multiple environmental sensors and stores data in the cloud
+                Create an intelligent device that monitors plant health through multiple sensors and stores data in the cloud
               </Typography>
             </Box>
           </motion.div>
@@ -987,7 +987,7 @@ const slides = [
                 Predictive Analytics
               </Typography>
               <Typography variant="body1">
-                Implement a model which can predict soil moisture levels with precision into the future, and the next watering time
+                Implement a model which can predict soil moisture levels and the next watering time
               </Typography>
             </Box>
           </motion.div>
