@@ -36,6 +36,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import WarningIcon from '@mui/icons-material/Warning';
+import BuildIcon from '@mui/icons-material/Build';
 
 const FullscreenContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
@@ -1288,13 +1289,13 @@ const slides = [
     ),
   },
   {
-    title: 'Implementation - Data',
+    title: 'Soil Moisture Modeling - Models',
     content: (props) => (
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
             <TimelineIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
-            Data Modeling
+            Soil Moisture Modeling
           </Typography>
         </Grid>
         <Grid item xs={12} md={8}>
@@ -1314,9 +1315,9 @@ const slides = [
                 overflow: 'hidden'
               }}>
                 <ClickableImage 
-                  src="/PlantGuru/presentation_images/data_model.png"
-                  alt="Model Prediction Accuracy"
-                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/data_model.png")}
+                  src="/PlantGuru/presentation_images/specs_proof/purple_predictions/models_comparison.png"
+                  alt="Models Comparison"
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/specs_proof/purple_predictions/models_comparison.png")}
                   style={{ 
                     width: '100%',
                     height: '100%',
@@ -1336,14 +1337,12 @@ const slides = [
             transition={{ delay: 0.5 }}
           >
             <Typography variant="h6" gutterBottom>
-              Analysis Techniques
+              Model Design Iterations
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="body1">• Time Series Analysis</Typography>
-              <Typography variant="body1">• Control Theory Modeling</Typography>
-              <Typography variant="body1">• Feature Engineering</Typography>
-              <Typography variant="body1">• Machine Learning Models</Typography>
-              <Typography variant="body1">• Performance Validation</Typography>
+              <Typography variant="body1">• Trendline projection vs Autoregressive</Typography>
+              <Typography variant="body1">• Using soil moisture vs incorporating other sensor data</Typography>
+              <Typography variant="body1">• Ignore window after watering</Typography>
             </Box>
           </motion.div>
         </Grid>
@@ -1351,52 +1350,82 @@ const slides = [
     ),
   },
   {
-    title: 'Demo - Software',
+    title: 'Soil Moisture Modeling - Predictions',
     content: (props) => (
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
-            Application & Data Model Demo
+            <TimelineIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Soil Moisture Modeling - Predictions
           </Typography>
         </Grid>
         <Grid item xs={12} md={6}>
           <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
             <Box sx={{ 
-              textAlign: 'center', 
-              mb: 4,
-              height: '60vh',
+              height: '70vh',
               display: 'flex',
               flexDirection: 'column'
             }}>
               <Box sx={{
                 flex: 1,
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4
               }}>
-                <ClickableImage 
-                  src="/PlantGuru/presentation_images/screenshots/sensor history-portrait.png" 
-                  alt="Sensor History View"
-                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/screenshots/sensor history-portrait.png")}
-                  style={{ 
-                    height: '100%',
-                    width: 'auto',
-                    maxWidth: '100%',
-                    objectFit: 'contain',
-                    borderRadius: 8,
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                  }}
-                />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <ClickableImage 
+                      src="/PlantGuru/presentation_images/specs_proof/purple_predictions/feb21_mar020818pm.jpg"
+                      alt="Prediction Feb 21 - Mar 02"
+                      onClick={() => props.handleImageClick("/PlantGuru/presentation_images/specs_proof/purple_predictions/feb21_mar020818pm.jpg")}
+                      style={{ 
+                        width: '100%',
+                        objectFit: 'contain',
+                        borderRadius: 8,
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ width: '40%' }}>
+                    <Typography variant="h6" color="primary">
+                      Feb 21 → Mar 2, 8:18 PM
+                    </Typography>
+                    <Typography variant="subtitle1" color="error">
+                      Error: +31.8 hours (26.5%)
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <ClickableImage 
+                      src="/PlantGuru/presentation_images/specs_proof/purple_predictions/feb23_mar071110pm.jpg"
+                      alt="Prediction Feb 23 - Mar 07"
+                      onClick={() => props.handleImageClick("/PlantGuru/presentation_images/specs_proof/purple_predictions/feb23_mar071110pm.jpg")}
+                      style={{ 
+                        width: '100%',
+                        objectFit: 'contain',
+                        borderRadius: 8,
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ width: '40%' }}>
+                    <Typography variant="h6" color="primary">
+                      Feb 23 → Mar 7, 11:10 PM
+                    </Typography>
+                    <Typography variant="subtitle1" color="error">
+                      Error: +154.2 hours (128.5%)
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                Real-time Dashboard
-              </Typography>
-              <Typography variant="body1">
-                Monitor live sensor data, view historical trends, and get insights about your plant's health all in one place
-              </Typography>
             </Box>
           </motion.div>
         </Grid>
@@ -1407,261 +1436,158 @@ const slides = [
             transition={{ delay: 0.5 }}
           >
             <Box sx={{ 
-              textAlign: 'center', 
-              mb: 4,
-              height: '60vh',
+              height: '70vh',
               display: 'flex',
               flexDirection: 'column'
             }}>
               <Box sx={{
                 flex: 1,
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4
               }}>
-                <ClickableImage 
-                  src="/PlantGuru/presentation_images/screenshots/plant view-portrait.png"
-                  alt="Plant Details View" 
-                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/screenshots/plant view-portrait.png")}
-                  style={{ 
-                    height: '100%',
-                    width: 'auto',
-                    maxWidth: '100%',
-                    objectFit: 'contain',
-                    borderRadius: 8,
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                  }}
-                />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <ClickableImage 
+                      src="/PlantGuru/presentation_images/specs_proof/purple_predictions/feb26_mar010455am.jpg"
+                      alt="Prediction Feb 26 - Mar 01"
+                      onClick={() => props.handleImageClick("/PlantGuru/presentation_images/specs_proof/purple_predictions/feb26_mar010455am.jpg")}
+                      style={{ 
+                        width: '100%',
+                        objectFit: 'contain',
+                        borderRadius: 8,
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ width: '40%' }}>
+                    <Typography variant="h6" color="primary">
+                      Feb 26 → Mar 1, 4:55 AM
+                    </Typography>
+                    <Typography variant="subtitle1" color="success.main">
+                      Error: -8.1 hours (6.8%)
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <ClickableImage 
+                      src="/PlantGuru/presentation_images/specs_proof/purple_predictions/feb27_mar011045pm.jpg"
+                      alt="Prediction Feb 27 - Mar 01"
+                      onClick={() => props.handleImageClick("/PlantGuru/presentation_images/specs_proof/purple_predictions/feb27_mar011045pm.jpg")}
+                      style={{ 
+                        width: '100%',
+                        objectFit: 'contain',
+                        borderRadius: 8,
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ width: '40%' }}>
+                    <Typography variant="h6" color="primary">
+                      Feb 27 → Mar 1, 10:45 PM
+                    </Typography>
+                    <Typography variant="subtitle1" color="success.main">
+                      Error: +9.75 hours (8.1%)
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                Plant Management
-              </Typography>
-              <Typography variant="body1">
-                Easily manage all your plants and monitor their health status at a glance
-              </Typography>
             </Box>
           </motion.div>
         </Grid>
       </Grid>
     ),
   },
- 
   {
-    title: 'Demo - Hardware',
+    title: 'Hardware Results',
     content: (props) => (
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
-            Hardware System Demo
+            <BuildIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Hardware Results
           </Typography>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Box sx={{ 
-              textAlign: 'center', 
-              mb: 4,
-              height: '50vh',
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
-              <Box sx={{
-                flex: 1,
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <ClickableImage 
-                  src="/PlantGuru/presentation_images/enclosure/top_angle.png"
-                  alt="Hardware Prototype"
-                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/enclosure/top_angle.png")}
-                  style={{ 
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    borderRadius: 8,
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                  }}
-                />
-              </Box>
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                Working Prototype
-              </Typography>
-              <Typography variant="body1">
-                Our compact and efficient hardware solution featuring multiple environmental sensors and automated watering control
-              </Typography>
-            </Box>
-          </motion.div>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <motion.div
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <Box sx={{ 
-              textAlign: 'center', 
-              mb: 4,
-              height: '50vh',
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
-              <Box sx={{
-                flex: 1,
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <ClickableImage 
-                  src="/PlantGuru/presentation_images/pcb/top_angle.png"
-                  alt="PCB Design"
-                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/pcb/top_angle.png")}
-                  style={{ 
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    borderRadius: 8,
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                  }}
-                />
-              </Box>
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                Custom PCB Design
-              </Typography>
-              <Typography variant="body1">
-                Purpose-built circuit board integrating ESP32, environmental sensors, and power management for reliable operation
-              </Typography>
-            </Box>
-          </motion.div>
         </Grid>
         <Grid item xs={12}>
           <motion.div
-            initial={{ y: 20, opacity: 0 }}
+            initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.7 }}
+            transition={{ delay: 0.3 }}
           >
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Key Features
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
-                  <Typography variant="body1">• Real-time soil moisture monitoring</Typography>
-                  <Typography variant="body1">• Temperature and humidity sensing</Typography>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <Typography variant="body1">• Automated watering system</Typography>
-                  <Typography variant="body1">• Light intensity measurement</Typography>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <Typography variant="body1">• Wi-Fi & Bluetooth connectivity</Typography>
-                  <Typography variant="body1">• Long battery life with efficient power management</Typography>
-                </Grid>
-              </Grid>
+            <Box sx={{ 
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: 3,
+              mb: 4
+            }}>
+              <Box sx={{ width: { xs: '100%', sm: '30%' } }}>
+                <ClickableImage 
+                  src="/PlantGuru/presentation_images/hardware/20250304_230803.jpg"
+                  alt="Hardware Prototype View 1"
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/hardware/20250304_230803.jpg")}
+                  style={{ 
+                    width: '100%',
+                    height: '60vh',
+                    objectFit: 'cover',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  }}
+                />
+              </Box>
+              <Box sx={{ width: { xs: '100%', sm: '30%' } }}>
+                <ClickableImage 
+                  src="/PlantGuru/presentation_images/hardware/20250304_230811.jpg"
+                  alt="Hardware Prototype View 2"
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/hardware/20250304_230811.jpg")}
+                  style={{ 
+                    width: '100%',
+                    height: '60vh',
+                    objectFit: 'cover',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  }}
+                />
+              </Box>
+              <Box sx={{ width: { xs: '100%', sm: '30%' } }}>
+                <ClickableImage 
+                  src="/PlantGuru/presentation_images/hardware/20250304_230828.jpg"
+                  alt="Hardware Prototype View 3"
+                  onClick={() => props.handleImageClick("/PlantGuru/presentation_images/hardware/20250304_230828.jpg")}
+                  style={{ 
+                    width: '100%',
+                    height: '60vh',
+                    objectFit: 'cover',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  }}
+                />
+              </Box>
             </Box>
           </motion.div>
         </Grid>
       </Grid>
     ),
-  }, 
+  },
   {
-    title: "Results",
+    title: "Data",
     content: (props) => (
-      <Grid container spacing={4}>
+      <Grid container spacing={3} sx={{ p: 2 }}>
         <Grid item xs={12}>
           <Typography variant="h3" gutterBottom>
-            <MemoryIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
-            Technical Specifications
+            <StorageIcon sx={{ fontSize: '2.5rem', verticalAlign: 'middle', mr: 2 }} />
+            Data Demo
           </Typography>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Size Requirements
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box>
-                  <Typography variant="subtitle1" color="primary">
-                    Embedded Software Size
-                  </Typography>
-                  <Typography variant="body1">
-                    • Current size: 3.2MB
-                  </Typography>
-                  <Typography variant="body1">
-                    • Required: less than 4MB
-                  </Typography>
-                  <Typography variant="body1" color="success.main">
-                    ✓ Requirement met (20% under limit)
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="subtitle1" color="primary">
-                    Daily Data Transfer
-                  </Typography>
-                  <Typography variant="body1">
-                    • Average usage: 4.2KB/day
-                  </Typography>
-                  <Typography variant="body1">
-                    • Required: less than 5KB/day
-                  </Typography>
-                  <Typography variant="body1" color="success.main">
-                    ✓ Requirement met (16% under limit)
-                  </Typography>
-                </Box>
-              </Box>
-            </Paper>
-          </motion.div>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <motion.div
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Time Requirements
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box>
-                  <Typography variant="subtitle1" color="primary">
-                    Setup Time
-                  </Typography>
-                  <Typography variant="body1">
-                    • Average setup: 45 seconds
-                  </Typography>
-                  <Typography variant="body1">
-                    • Required: less than 60 seconds
-                  </Typography>
-                  <Typography variant="body1" color="success.main">
-                    ✓ Requirement met (25% faster)
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="subtitle1" color="primary">
-                    Notification Response
-                  </Typography>
-                  <Typography variant="body1">
-                    • Average delay: 3.2 seconds
-                  </Typography>
-                  <Typography variant="body1">
-                    • Required: less than 5 seconds
-                  </Typography>
-                  <Typography variant="body1" color="success.main">
-                    ✓ Requirement met (36% faster)
-                  </Typography>
-                </Box>
-              </Box>
-            </Paper>
-          </motion.div>
+        <Grid item xs={12} sx={{ height: 'calc(100vh - 200px)' }}>
+          <LiveDataDemo />
         </Grid>
       </Grid>
-    ),
+    )
   },
 ];
 
