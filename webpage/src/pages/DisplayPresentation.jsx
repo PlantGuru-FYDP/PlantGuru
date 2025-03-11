@@ -215,7 +215,7 @@ const LiveDataDemo = () => {
     11: "Purple Coleus",
     12: "Spider Plant",
     13: "Onion",
-    16: "Watering Position Test (Garlic)",
+    22: "Spider Plant Demo",
     custom: "Custom Plant ID"
   };
 
@@ -1401,30 +1401,7 @@ const slides = [
                     </Typography>
                   </Box>
                 </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <ClickableImage 
-                      src="/PlantGuru/presentation_images/specs_proof/purple_predictions/feb23_mar071110pm.jpg"
-                      alt="Prediction Feb 23 - Mar 07"
-                      onClick={() => props.handleImageClick("/PlantGuru/presentation_images/specs_proof/purple_predictions/feb23_mar071110pm.jpg")}
-                      style={{ 
-                        width: '100%',
-                        objectFit: 'contain',
-                        borderRadius: 8,
-                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                  </Box>
-                  <Box sx={{ width: '40%' }}>
-                    <Typography variant="h6" color="primary">
-                      Feb 23 → Mar 7, 11:10 PM
-                    </Typography>
-                    <Typography variant="subtitle1" color="error">
-                      Error: +154.2 hours (128.5%)
-                    </Typography>
-                  </Box>
-                </Box>
+              
               </Box>
             </Box>
           </motion.div>
@@ -1472,29 +1449,6 @@ const slides = [
                   </Box>
                 </Box>
                 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <ClickableImage 
-                      src="/PlantGuru/presentation_images/specs_proof/purple_predictions/feb27_mar011045pm.jpg"
-                      alt="Prediction Feb 27 - Mar 01"
-                      onClick={() => props.handleImageClick("/PlantGuru/presentation_images/specs_proof/purple_predictions/feb27_mar011045pm.jpg")}
-                      style={{ 
-                        width: '100%',
-                        objectFit: 'contain',
-                        borderRadius: 8,
-                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                  </Box>
-                  <Box sx={{ width: '40%' }}>
-                    <Typography variant="h6" color="primary">
-                      Feb 27 → Mar 1, 10:45 PM
-                    </Typography>
-                    <Typography variant="subtitle1" color="success.main">
-                      Error: +9.75 hours (8.1%)
-                    </Typography>
-                  </Box>
-                </Box>
               </Box>
             </Box>
           </motion.div>
