@@ -37,6 +37,8 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import WarningIcon from '@mui/icons-material/Warning';
 import BuildIcon from '@mui/icons-material/Build';
+import PauseIcon from '@mui/icons-material/Pause';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 
 const FullscreenContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
@@ -215,7 +217,7 @@ const LiveDataDemo = () => {
     11: "Purple Coleus",
     12: "Spider Plant",
     13: "Onion",
-    22: "Spider Plant Demo",
+    24: "Spider Plant Demo",
     custom: "Custom Plant ID"
   };
 
@@ -1550,6 +1552,7 @@ export default function DisplayPresentation() {
   const [currentImage, setCurrentImage] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [slideshowActive, setSlideshowActive] = useState(false);
 
   const handleImageClick = (imageSrc) => {
     setSelectedImage(imageSrc);
@@ -1574,6 +1577,31 @@ export default function DisplayPresentation() {
       paginate(-1);
     }
   };
+
+  // Toggle slideshow mode
+  const toggleSlideshow = () => {
+    setSlideshowActive(prev => !prev);
+  };
+
+  // Handle automatic slide transitions when slideshow is active
+  useEffect(() => {
+    let slideshowTimer;
+    
+    if (slideshowActive) {
+      slideshowTimer = setInterval(() => {
+        if (page < slides.length - 1) {
+          paginate(1);
+        } else {
+          // Loop back to the first slide when reaching the end
+          setPage([0, -1]);
+        }
+      }, 15000); // 15 seconds
+    }
+    
+    return () => {
+      if (slideshowTimer) clearInterval(slideshowTimer);
+    };
+  }, [slideshowActive, page, paginate, slides.length]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -1694,6 +1722,26 @@ export default function DisplayPresentation() {
           />
         ))}
       </SlideControls>
+
+      {/* Slideshow Toggle Button */}
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 20,
+          left: 20,
+          zIndex: 1000,
+        }}
+      >
+        <Button
+          variant="contained"
+          color={slideshowActive ? "secondary" : "primary"}
+          onClick={toggleSlideshow}
+          startIcon={slideshowActive ? <PauseIcon /> : <PlayArrowIcon />}
+          sx={{ borderRadius: 28 }}
+        >
+          {slideshowActive ? "Stop Slideshow" : "Start Slideshow"}
+        </Button>
+      </Box>
     </FullscreenContainer>
   );
 } 
