@@ -43,7 +43,7 @@ const ModelChange = () => {
     setLoading(true);
     try {
       // Fetch all plants from the backend
-      const response = await fetch('http://52.14.140.110:3000/api/allPlants');
+      const response = await fetch('http://18.119.106.66:3000/api/allPlants');
       if (!response.ok) {
         throw new Error('Failed to fetch plants');
       }
@@ -105,7 +105,7 @@ const ModelChange = () => {
   const updatePlantModel = async (plantId, age) => {
     setUpdating(true);
     try {
-      const response = await fetch('http://52.14.140.110:3000/api/updatePlant', {
+      const response = await fetch('http://18.119.106.66:3000/api/updatePlant', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ const ModelChange = () => {
     try {
       // Create an array of promises for each plant update
       const updatePromises = plants.map(plant => 
-        fetch('http://52.14.140.110:3000/api/updatePlant', {
+        fetch('http://18.119.106.66:3000/api/updatePlant', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -170,7 +170,7 @@ const ModelChange = () => {
       
       // Create an array of promises for each plant update
       const updatePromises = updatedPlants.map(plant => 
-        fetch('http://52.14.140.110:3000/api/updatePlant', {
+        fetch('http://18.119.106.66:3000/api/updatePlant', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
