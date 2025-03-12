@@ -8,6 +8,7 @@ import Display from './pages/Display';
 import Documentation from './pages/Documentation';
 import LiveMonitoring from './pages/LiveMonitoring';
 import DisplayPresentation from './pages/DisplayPresentation';
+import ModelChange from './pages/ModelChange';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             <Route path="presentationLaunch" element={<Display />} />
             <Route path="docs" element={<Documentation />} />
             <Route path="live" element={<LiveMonitoring />} />
+            <Route path="modelchange" element={<ModelChange />} />
           </Route>
           <Route path="/presentation" element={<DisplayPresentation />} />
         </Routes>

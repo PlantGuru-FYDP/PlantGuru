@@ -121,3 +121,13 @@ exports.updatePlant = async (req, res) => {
         return res.status(500).send({ message: err.message || 'Internal server error' });
     }
 };
+
+exports.getAllPlants = async (req, res) => {
+  try {
+    const [rows] = await Plant.readAllPlants();
+    return res.status(200).send(rows);
+  } catch (err) {
+    console.error('Error fetching all plants:', err);
+    return res.status(500).send({ message: err.message });
+  }
+};

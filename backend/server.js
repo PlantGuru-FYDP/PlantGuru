@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const healthCheckScheduler = require("./api/services/healthCheckSchedulerService");
 const modelingService = require("./api/services/modelingService");
+const initializationService = require("./api/services/initializationService");
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -47,10 +48,15 @@ app.use((error, req, res, next) => {
 });
 
 // create server instance
-const server = app.listen(3000, () => {
+const server = app.listen(3000, async () => {
   console.log("Listening on port 3000");
+  
+  // Initialize all plants to use the default model
+  await initializationService.initialize();
+  
   // Start health check scheduler after server is running
   healthCheckScheduler.start();
+  
   // Start modeling service scheduler
   modelingService.start();
 });

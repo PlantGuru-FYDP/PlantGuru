@@ -19,7 +19,7 @@ exports.getProjections = async (req, res) => {
             connection,
             plant_id,
             Math.ceil(num_points * granularity / 60), // Convert to hours, rounding up
-            timestamp
+            timestamp ? new Date(timestamp) : null
         );
 
         if (!predictions) {

@@ -322,11 +322,27 @@ function getDryingCycles(sensorData, wateringEvents) {
  * @param {Object} db - Database connection
  * @param {number} plantId - Plant ID
  * @param {number} predictionHours - Hours to predict into future
+ * @param {number} timestamp - Optional timestamp for reference
  * @returns {Object|null} Predictions object
  */
-async function updatePlantPredictions(db, plantId, predictionHours = 24) {
+async function updatePlantPredictions(db, plantId, predictionHours = 24, timestamp = null) {
     try {
         console.log(`Running moisture predictions update for plant ${plantId}...`);
+        
+        // Get plant details to check the age (model selection)
+        const [plantDetails] = await db.query(`
+            SELECT age
+            FROM Plants
+            WHERE plant_id = ?
+        `, [plantId]);
+        
+        if (!plantDetails || plantDetails.length === 0) {
+            console.log(`Plant ${plantId} not found`);
+            return null;
+        }
+        
+        const plantAge = plantDetails[0].age || 1;
+        console.log(`Plant ${plantId} has age ${plantAge} (model selection)`);
         
         // Get all sensor data
         const [sensorData] = await db.query(`
@@ -359,15 +375,6 @@ async function updatePlantPredictions(db, plantId, predictionHours = 24) {
 
         console.log(`Retrieved ${wateringEvents.length} watering events for plant ${plantId}`);
 
-        // Get drying cycles
-        const cycles = getDryingCycles(sensorData, wateringEvents);
-        console.log(`Identified ${cycles.length} drying cycles`);
-        
-        if (cycles.length < 1) {  // Need at least 1 cycle for training
-            console.log(`Insufficient cycles for plant ${plantId} (only ${cycles.length} cycles)`);
-            return null;
-        }
-
         // Get plant's moisture threshold from notification settings
         const [settings] = await db.query(`
             SELECT soil_moisture_min, soil_moisture_notifications
@@ -388,56 +395,97 @@ async function updatePlantPredictions(db, plantId, predictionHours = 24) {
             isDefault: settings.length === 0 || settings[0].soil_moisture_min === null
         });
 
-        // Mark ignore windows in each cycle
-        const ignoreWindowHours = 20;
-        cycles.forEach(cycle => {
-            cycle.forEach(reading => {
-                reading.in_ignore_window = reading.hours_since_watering <= ignoreWindowHours;
-            });
-        });
-
-        // Get the last complete cycle for training
-        const trainingCycle = cycles[cycles.length - 2] || cycles[cycles.length - 1];
-        const currentCycle = cycles[cycles.length - 1];
-        console.log(`Using last complete cycle for training with ${trainingCycle.length} points`);
-
-        if (trainingCycle.length < 30) {  // Need minimum points for meaningful prediction
-            console.log(`Insufficient training data for plant ${plantId}`);
-            return null;
-        }
-
-        // Initialize and train model
-        const model = new ARMAXPredictor({
-            useExternalInputs: false,
-            ignoreWindowHours: 20,
-            minDecrease: 0.0002
-        });
-
-        await model.train([trainingCycle]); // Train on just the last complete cycle
-        console.log('Model training completed');
-
-        // Get current reading - if in ignore window, use the last reading from current cycle
-        const currentReading = currentCycle[currentCycle.length - 1];
+        // Get current reading
+        const currentReading = sensorData[sensorData.length - 1];
         console.log(`Using current reading from ${currentReading.time_stamp} with moisture ${currentReading.soil_moisture_1}%`);
         
-        // Make predictions
-        const predictions = model.predict(currentReading, predictionHours * 60);
-        console.log(`Generated ${predictions.length} predictions`);
-
-        const referenceTime = new Date(currentReading.time_stamp);
+        // Reference time for predictions
+        const referenceTime = timestamp ? new Date(timestamp) : new Date(currentReading.time_stamp);
         
-        const hourlyPredictions = predictions
-            .filter((_, i) => i % 60 === 0)
-            .map((moisture, hour) => ({
-                predicted_moisture: moisture,
-                prediction_for_time: new Date(referenceTime.getTime() + hour * 60 * 60 * 1000)
-            }));
+        // Select prediction model based on plant age
+        let predictions;
+        let hourlyPredictions;
+        let predictedDryTime;
+        
+        switch (plantAge) {
+            case 2:
+                // Model 2: Linear regression on last 10 data points
+                console.log(`Using Model 2 (Linear Regression) for plant ${plantId}`);
+                const result = linearRegressionModel(sensorData, predictionHours, moistureThreshold, referenceTime);
+                hourlyPredictions = result.hourlyPredictions;
+                predictedDryTime = result.predictedDryTime;
+                break;
+                
+            case 3:
+                // Model 3: Exponential decay to 50% of dry threshold
+                console.log(`Using Model 3 (Exponential Decay) for plant ${plantId}`);
+                const expResult = exponentialDecayModel(currentReading, predictionHours, moistureThreshold, referenceTime);
+                hourlyPredictions = expResult.hourlyPredictions;
+                predictedDryTime = expResult.predictedDryTime;
+                break;
+                
+            default:
+                // Model 1 (Default): ARMAX model
+                console.log(`Using Model 1 (Default ARMAX) for plant ${plantId}`);
+                // Get drying cycles
+                const cycles = getDryingCycles(sensorData, wateringEvents);
+                console.log(`Identified ${cycles.length} drying cycles`);
+                
+                if (cycles.length < 1) {  // Need at least 1 cycle for training
+                    console.log(`Insufficient cycles for plant ${plantId} (only ${cycles.length} cycles). Using linear regression fallback.`);
+                    // Fallback to linear regression if no cycles are available
+                    const result = linearRegressionModel(sensorData, predictionHours, moistureThreshold, referenceTime);
+                    hourlyPredictions = result.hourlyPredictions;
+                    predictedDryTime = result.predictedDryTime;
+                    break;
+                }
 
-        // Find when moisture will drop below threshold
-        const dryIndex = predictions.findIndex(moisture => moisture < moistureThreshold);
-        const predictedDryTime = dryIndex !== -1 ? 
-            new Date(referenceTime.getTime() + dryIndex * 60 * 1000) : 
-            null;
+                // Mark ignore windows in each cycle
+                const ignoreWindowHours = 20;
+                cycles.forEach(cycle => {
+                    cycle.forEach(reading => {
+                        reading.in_ignore_window = reading.hours_since_watering <= ignoreWindowHours;
+                    });
+                });
+
+                // Get the last complete cycle for training
+                const trainingCycle = cycles[cycles.length - 2] || cycles[cycles.length - 1];
+                const currentCycle = cycles[cycles.length - 1];
+                console.log(`Using last complete cycle for training with ${trainingCycle.length} points`);
+
+                if (trainingCycle.length < 30) {  // Need minimum points for meaningful prediction
+                    console.log(`Insufficient training data for plant ${plantId}`);
+                    return null;
+                }
+
+                // Initialize and train model
+                const model = new ARMAXPredictor({
+                    useExternalInputs: false,
+                    ignoreWindowHours: 20,
+                    minDecrease: 0.0002
+                });
+
+                await model.train([trainingCycle]); // Train on just the last complete cycle
+                console.log('Model training completed');
+                
+                // Make predictions
+                predictions = model.predict(currentReading, predictionHours * 60);
+                console.log(`Generated ${predictions.length} predictions`);
+                
+                hourlyPredictions = predictions
+                    .filter((_, i) => i % 60 === 0)
+                    .map((moisture, hour) => ({
+                        predicted_moisture: moisture,
+                        prediction_for_time: new Date(referenceTime.getTime() + hour * 60 * 60 * 1000)
+                    }));
+
+                // Find when moisture will drop below threshold
+                const dryIndex = predictions.findIndex(moisture => moisture < moistureThreshold);
+                predictedDryTime = dryIndex !== -1 ? 
+                    new Date(referenceTime.getTime() + dryIndex * 60 * 1000) : 
+                    null;
+                break;
+        }
 
         // Store predictions in database
         if (hourlyPredictions.length > 0) {
@@ -476,6 +524,113 @@ async function updatePlantPredictions(db, plantId, predictionHours = 24) {
         console.error(`Error updating predictions for plant ${plantId}:`, error);
         throw error;
     }
+}
+
+/**
+ * Linear regression model (Model 2)
+ * Uses the last 10 data points to predict future moisture levels
+ */
+function linearRegressionModel(sensorData, predictionHours, moistureThreshold, referenceTime) {
+    // Get the last 10 data points (or fewer if not available)
+    const numPoints = Math.min(10, sensorData.length);
+    const recentData = sensorData.slice(-numPoints);
+    
+    // Calculate linear regression
+    let sumX = 0;
+    let sumY = 0;
+    let sumXY = 0;
+    let sumXX = 0;
+    
+    // Use timestamps as X values (converted to hours from the first point)
+    const firstTime = new Date(recentData[0].time_stamp).getTime();
+    
+    recentData.forEach((point, index) => {
+        const x = (new Date(point.time_stamp).getTime() - firstTime) / (1000 * 60 * 60); // hours
+        const y = point.soil_moisture_1;
+        
+        sumX += x;
+        sumY += y;
+        sumXY += x * y;
+        sumXX += x * x;
+    });
+    
+    const n = recentData.length;
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    
+    console.log(`Linear regression: y = ${slope.toFixed(4)}x + ${intercept.toFixed(4)}`);
+    
+    // Generate hourly predictions
+    const hourlyPredictions = [];
+    const currentMoisture = recentData[recentData.length - 1].soil_moisture_1;
+    
+    for (let hour = 0; hour <= predictionHours; hour++) {
+        const predictedMoisture = Math.max(0, intercept + slope * hour);
+        hourlyPredictions.push({
+            predicted_moisture: predictedMoisture,
+            prediction_for_time: new Date(referenceTime.getTime() + hour * 60 * 60 * 1000)
+        });
+    }
+    
+    // Calculate when moisture will drop below threshold
+    let predictedDryTime = null;
+    if (slope < 0) { // Only if moisture is decreasing
+        const hoursUntilDry = (moistureThreshold - intercept) / slope;
+        if (hoursUntilDry > 0) {
+            predictedDryTime = new Date(referenceTime.getTime() + hoursUntilDry * 60 * 60 * 1000);
+        }
+    }
+    
+    return {
+        hourlyPredictions,
+        predictedDryTime
+    };
+}
+
+/**
+ * Exponential decay model (Model 3)
+ * Models moisture as exponential decay to 50% of dry threshold
+ */
+function exponentialDecayModel(currentReading, predictionHours, moistureThreshold, referenceTime) {
+    const currentMoisture = currentReading.soil_moisture_1;
+    const asymptote = moistureThreshold * 0.5; // Decay to 50% of threshold
+    const decayTarget = currentMoisture - asymptote;
+    
+    // Decay rate (k) - adjust this to control how fast moisture decreases
+    // Lower k means slower decay
+    const k = 0.02; // This means ~2% decay per hour
+    
+    // Generate hourly predictions
+    const hourlyPredictions = [];
+    
+    for (let hour = 0; hour <= predictionHours; hour++) {
+        const decay = decayTarget * Math.exp(-k * hour);
+        const predictedMoisture = asymptote + decay;
+        
+        hourlyPredictions.push({
+            predicted_moisture: predictedMoisture,
+            prediction_for_time: new Date(referenceTime.getTime() + hour * 60 * 60 * 1000)
+        });
+    }
+    
+    // Calculate when moisture will drop below threshold
+    let predictedDryTime = null;
+    
+    if (currentMoisture > moistureThreshold) {
+        // Solve for t: asymptote + decayTarget * e^(-k*t) = threshold
+        // t = -ln((threshold - asymptote) / decayTarget) / k
+        const timeUntilDry = -Math.log((moistureThreshold - asymptote) / decayTarget) / k;
+        
+        if (timeUntilDry > 0 && !isNaN(timeUntilDry) && isFinite(timeUntilDry)) {
+            const minutesUntilDry = timeUntilDry * 60;
+            predictedDryTime = new Date(referenceTime.getTime() + minutesUntilDry * 60 * 1000);
+        }
+    }
+    
+    return {
+        hourlyPredictions,
+        predictedDryTime
+    };
 }
 
 module.exports = {
